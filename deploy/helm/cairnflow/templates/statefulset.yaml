@@ -1,0 +1,100 @@
+{{- if not .Values.mainStore }}{{ fail "set mainStore (e.g. s3://bucket/prefix)" }}{{ end }}
+# A StatefulSet only for stable pod names (`--node-id`, `--host`); there is no
+# PersistentVolume — nodes hold no state (everything is on the object store).
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "cairnflow.name" . }}
+  labels: {{- include "cairnflow.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "cairnflow.name" . }}-peers
+  replicas: {{ .Values.replicas }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels: {{- include "cairnflow.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "cairnflow.labels" . | nindent 8 }}
+    spec:
+      # SIGTERM ⇒ graceful shutdown (seal each range, tell the peers); longer than --shutdown-timeout-ms.
+      terminationGracePeriodSeconds: {{ add (div .Values.shutdownTimeoutMs 1000) 10 }}
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: cairnflow
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            # `--host` is the address bound **and** advertised to peers: the pod IP
+            # exists as soon as the container runs (a DNS name through the headless
+            # service does not yet — the record appears later and the node exits
+            # because it cannot resolve it, observed on kind).
+            - name: POD_IP
+              valueFrom: { fieldRef: { fieldPath: status.podIP } }
+          envFrom:
+            - secretRef: { name: {{ .Values.s3Secret }} }
+            - secretRef: { name: {{ .Values.adminSecret }} }
+          args:
+            - --main-store
+            - {{ .Values.mainStore | quote }}
+            {{- with .Values.walStore }}
+            - --wal-store
+            - {{ . | quote }}
+            {{- end }}
+            {{- with .Values.walAtomicPut }}
+            - --wal-atomic-put
+            - {{ . | quote }}
+            {{- end }}
+            - --cluster
+            - --node-id
+            - $(POD_NAME)
+            - --host
+            - $(POD_IP)
+            - --port
+            - "8080"
+            - --internal-port
+            - "8081"
+            - --partitions
+            - {{ .Values.partitions | quote }}
+            - --lease-ttl-ms
+            - {{ .Values.leaseTtlMs | quote }}
+            - --shutdown-timeout-ms
+            - {{ .Values.shutdownTimeoutMs | quote }}
+            {{- if .Values.diskCache.enabled }}
+            - --disk-cache-dir
+            - /var/cache/cairnflow
+            - --disk-cache-bytes
+            - {{ .Values.diskCache.bytes | int64 | quote }}
+            {{- end }}
+          ports:
+            - { name: ingress, containerPort: 8080 }
+            - { name: internal, containerPort: 8081 }
+          readinessProbe:
+            httpGet: { path: /health, port: ingress }
+            periodSeconds: 5
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.diskCache.enabled }}
+          volumeMounts:
+            - name: disk-cache
+              mountPath: /var/cache/cairnflow
+          {{- end }}
+      {{- if .Values.diskCache.enabled }}
+      volumes:
+        # SST disk cache: not a source of truth, lost with the pod — as intended.
+        - name: disk-cache
+          emptyDir:
+            sizeLimit: {{ .Values.diskCache.sizeLimit }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}

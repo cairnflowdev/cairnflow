@@ -1,0 +1,20 @@
+# Starts a throwaway SeaweedFS S3 server on localhost:18333 with bucket `walbench`,
+# using the test-only credentials of scripts/dev-store/seaweed-s3.json.
+name: seaweedfs
+description: Local SeaweedFS S3 for chaos, mixed-binary and the S3 rows of check.sh
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        # chrislusf/seaweedfs pinned by digest.
+        docker run -d --name seaweedfs -p 127.0.0.1:18333:8333 \
+          -v "$GITHUB_WORKSPACE/scripts/dev-store/seaweed-s3.json:/etc/seaweed/s3.json:ro" \
+          chrislusf/seaweedfs@sha256:52194fba4fecd0083c842158b3a902ba6e04a63619b2b0efcd08007bdb6a4602 \
+          server -dir=/data -s3 -s3.config=/etc/seaweed/s3.json -volume.max=0 -master.volumeSizeLimitMB=1024
+        for _ in $(seq 1 60); do
+          curl -s -o /dev/null --max-time 2 http://localhost:18333/ && break
+          sleep 2
+        done
+        aws --endpoint-url http://localhost:18333 s3api create-bucket --bucket walbench

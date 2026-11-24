@@ -1,0 +1,54 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "promise-bidi-v1",
+  "description": "CompletePromise then GetPromise on the same promise.",
+  "source": ["crates/cairn-runtime/tests/phase4.rs::promise_get_and_complete_yield_tasks"],
+  "spec": ["5"],
+  "matrix_cells": [],
+  "wire_version": 1,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "promise" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x040b", "name": "CompletePromise", "flags": "0x0000", "hex": "040b0000000000240a07617070726f766512060a04226f6b225801620f70726f6d6973652f617070726f7665", "summary": "CompletePromise(CompletePromiseCommandMessage { key: \"approve\", result_completion_id: 1, name: \"promise/approve\", completion: Some(CompletionValue(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800b", "name": "CompletePromiseCompletion", "flags": "0x0000", "hex": "800b00000000000408012200", "summary": "CompletePromiseCompletion(CompletePromiseCompletionNotificationMessage { completion_id: 1, result: Some(Void(Void)) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0101", "summary": "Suspension(SuspensionMessage { waiting_completions: [1], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0409", "name": "GetPromise", "flags": "0x0000", "hex": "040900000000001c0a07617070726f76655802620f70726f6d6973652f617070726f7665", "summary": "GetPromise(GetPromiseCommandMessage { key: \"approve\", result_completion_id: 2, name: \"promise/approve\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8009", "name": "GetPromiseCompletion", "flags": "0x0000", "hex": "800900000000000a08022a060a04226f6b22", "summary": "GetPromiseCompletion(GetPromiseCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0102", "summary": "Suspension(SuspensionMessage { waiting_completions: [2], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001062066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111806", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 6, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040b", "name": "CompletePromise", "flags": "0x0000", "hex": "040b0000000000240a07617070726f766512060a04226f6b225801620f70726f6d6973652f617070726f7665", "summary": "CompletePromise(CompletePromiseCommandMessage { key: \"approve\", result_completion_id: 1, name: \"promise/approve\", completion: Some(CompletionValue(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800b", "name": "CompletePromiseCompletion", "flags": "0x0000", "hex": "800b00000000000408012200", "summary": "CompletePromiseCompletion(CompletePromiseCompletionNotificationMessage { completion_id: 1, result: Some(Void(Void)) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0409", "name": "GetPromise", "flags": "0x0000", "hex": "040900000000001c0a07617070726f76655802620f70726f6d6973652f617070726f7665", "summary": "GetPromise(GetPromiseCommandMessage { key: \"approve\", result_completion_id: 2, name: \"promise/approve\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8009", "name": "GetPromiseCompletion", "flags": "0x0000", "hex": "800900000000000a08022a060a04226f6b22", "summary": "GetPromiseCompletion(GetPromiseCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001062066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x040b", "name": "CompletePromise", "payload_hex": "0a07617070726f766512060a04226f6b225801620f70726f6d6973652f617070726f7665", "summary": "CompletePromise(CompletePromiseCommandMessage { key: \"approve\", result_completion_id: 1, name: \"promise/approve\", completion: Some(CompletionValue(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+    { "index": 2, "type": "0x800b", "name": "CompletePromiseCompletion", "payload_hex": "08012200", "summary": "CompletePromiseCompletion(CompletePromiseCompletionNotificationMessage { completion_id: 1, result: Some(Void(Void)) })" },
+    { "index": 3, "type": "0x0409", "name": "GetPromise", "payload_hex": "0a07617070726f76655802620f70726f6d6973652f617070726f7665", "summary": "GetPromise(GetPromiseCommandMessage { key: \"approve\", result_completion_id: 2, name: \"promise/approve\" })" },
+    { "index": 4, "type": "0x8009", "name": "GetPromiseCompletion", "payload_hex": "08022a060a04226f6b22", "summary": "GetPromiseCompletion(GetPromiseCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+    { "index": 5, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "226f6b22" }
+}

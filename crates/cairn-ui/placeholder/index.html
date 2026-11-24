@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cairnflow</title>
+</head>
+<body>
+<h1>Cairnflow console is not built</h1>
+<p>This binary was built without <code>ui/dist</code>. Build the console, then rebuild cairnflow:</p>
+<pre>cd ui &amp;&amp; npm ci &amp;&amp; npm run build
+cargo build -p cairn-server</pre>
+<p>The HTTP API works as usual.</p>
+</body>
+</html>

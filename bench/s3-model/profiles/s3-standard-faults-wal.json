@@ -1,0 +1,91 @@
+{
+  "name": "s3-standard-faults-wal",
+  "note": "s3-standard-faults (kept unchanged as the baseline — see that profile) plus ambiguous faults on the shared WAL log (class nodewal: data, seal, floor, index). Three cases: ambiguous = the PUT landed, then an error is returned (case a); retried = the PUT landed and the answer is that of object_store's own retry — Create sees AlreadyExists on cairn's very first attempt (case b); late = the PUT lands 2 500 ms late, after the attempt was cancelled by the 2 s put_timeout, and is still applied (case c). On code from before ambiguous shared-WAL PUTs were resolved by read-back and slow PUTs rotated the stripe instead of failing the node, every hit was a whole-node fail-stop: this profile MEASURES that blast radius (cairnflow_failstop_total{cause}); it is not a profile expected to run chaos green. ASSUMED, not measured; rates of the same order as the other classes. Written 2026-10-18.",
+  "seed": 7,
+  "latency": {
+    "put": {
+      "p50_ms": 26,
+      "p90_ms": 50,
+      "p99_ms": 102,
+      "p999_ms": 233,
+      "note": "includes conditional PUTs (If-Match / If-None-Match) — no separate figures yet"
+    },
+    "get": {
+      "p50_ms": 15,
+      "p90_ms": 30,
+      "p99_ms": 70,
+      "p999_ms": 200
+    },
+    "head": {
+      "p50_ms": 12,
+      "p99_ms": 50
+    },
+    "list": {
+      "p50_ms": 30,
+      "p99_ms": 120
+    },
+    "delete": {
+      "p50_ms": 20,
+      "p99_ms": 80
+    },
+    "all": {
+      "p50_ms": 30,
+      "p99_ms": 120,
+      "note": "copy, rename — cairn barely uses them"
+    }
+  },
+  "slowdown": {
+    "write_rate": 3500,
+    "read_rate": 5500,
+    "initial_depth": 0,
+    "max_depth": 6,
+    "split_after_s": 60,
+    "client_retry": "object_store",
+    "note": "client_retry simulates the 5xx retry loop of the S3 client cairn builds (object_store 0.14: 10 attempts, backoff 100 ms ×2 with jitter, capped at 15 s; 30 s in total — S3_CLIENT_RETRY_TIMEOUT) — exactly what a real node sees"
+  },
+  "faults": [
+    {
+      "ops": [
+        "put",
+        "delete"
+      ],
+      "fail": 0.002,
+      "note": "every write, every class: 5xx before reaching the store"
+    },
+    {
+      "ops": [
+        "put",
+        "delete"
+      ],
+      "classes": [
+        "lease",
+        "other"
+      ],
+      "ambiguous": 0.003,
+      "retried": 0.003,
+      "note": "objects cairn manages itself: written, then an error / written, then the answer of the retry"
+    },
+    {
+      "ops": [
+        "put"
+      ],
+      "classes": [
+        "nodewal"
+      ],
+      "ambiguous": 0.003,
+      "retried": 0.003,
+      "late": 0.001,
+      "late_ms": 2500,
+      "note": "shared WAL log: written, then an error / written, then AlreadyExists from the automatic retry / lands late, after put_timeout"
+    },
+    {
+      "ops": [
+        "get",
+        "head",
+        "list"
+      ],
+      "fail": 0.001,
+      "note": "reads: 5xx"
+    }
+  ]
+}

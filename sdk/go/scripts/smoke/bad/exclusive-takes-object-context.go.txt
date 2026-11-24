@@ -1,0 +1,14 @@
+// Copyright (c) The Cairnflow Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// want: does not match func(cairn.ObjectContext
+// An exclusive object handler takes an ObjectContext, not a plain Context.
+package main
+
+import cairn "github.com/cairnflowdev/cairnflow/sdk/go"
+
+func handle(_ cairn.Context, n int) (int, error) { return n, nil }
+
+var _ = cairn.NewObject("O", cairn.Exclusive("h", handle))
+
+func main() {}

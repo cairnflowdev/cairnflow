@@ -1,0 +1,15 @@
+# Repository labels (apply with a label-sync tool or by hand).
+- { name: bug, color: d73a4a, description: Something does not work as documented }
+- { name: enhancement, color: a2eeef, description: New capability or improvement }
+- { name: needs-triage, color: fbca04, description: Not looked at by a maintainer yet }
+- { name: rfc, color: 5319e7, description: Design change (protocol, format, invariant) }
+- { name: correctness, color: b60205, description: Durability, ordering or data-loss risk }
+- { name: security, color: ee0701, description: Security hardening (reports go through SECURITY.md) }
+- { name: area/engine, color: 1d76db }
+- { name: area/store, color: 1d76db }
+- { name: area/sdk, color: 1d76db }
+- { name: area/console, color: 1d76db }
+- { name: area/ops, color: 1d76db, description: Deployment, metrics, runbooks, cairn-ctl }
+- { name: docs, color: 0075ca }
+- { name: good first issue, color: 7057ff }
+- { name: dependencies, color: 0366d6 }

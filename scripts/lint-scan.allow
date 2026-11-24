@@ -1,0 +1,26 @@
+# Calls to the reader's **unbounded** scan API (`…_unbounded(`) on paths that hold the
+# engine — `crates/cairn-server/src/{turn,actor,flow}/` and `crates/cairn-engine/src/engine/`.
+# A list frozen on 2026-11-10 from an inventory of every call site. Read by
+# `scripts/lint-sources.sh` (check 11).
+#
+# Line: <max count> <path> <note: call site — what the cost scales with>. Above the
+# count ⇒ FAIL. Nothing below is O(range history) on the running path: O(history)
+# scans (the `Invocations` index of `recover`, the safety net) go in bounded chunks
+# (`Engine::runnable_chunk`). A new operation uses a bounded variant (`limit`, a
+# cursor, `partial`) or is recorded here with its cost.
+
+1  crates/cairn-engine/src/engine/due.rs        `pending_retries_among` → `retry_index_unbounded` — O(retry index rows from the mark: due, watch due, skew = live); no longer on the recovery path since recovery went chunked, tests only (FL-18)
+4  crates/cairn-engine/src/engine/effects.rs    `ClearAllState`/`ReadStateKeys` → `state_entries_unbounded` (O(state of one object)); resolving a promise → `promise_waiters_unbounded` (O(waiters of one promise)); `stage_attachment_replies` → `attachments_unbounded` (O(attachments to one invocation))
+12 crates/cairn-engine/src/engine/lifecycle.rs  `purge`/`archive_snapshot` (journal, stream chunks, artifacts — O(one invocation), journal capped at 32 MiB, streams at 8 MiB; at most 32 invocations per tick), workflow cleanup (state, promises of one object), `restart_refusal`/`restart_in` (journal, artifacts, attachments — an HTTP command), `fail_in` (attachments)
+1  crates/cairn-engine/src/engine/promise.rs    `complete_promise_external` → `promise_waiters_unbounded` — O(waiters of one promise)
+8  crates/cairn-engine/src/engine/query.rs      `journal_entries` (HTTP replay), `live_children` (cancel), `journal_len` (failure path) — O(journal of one invocation); `pinned_to`/`pinned_counts` — O(unfinished invocations); `lifecycle_violations` and `invocations_tagged` (`unfinished_invocations_unbounded`, `runnable_invocations_unbounded`) — O(history), **tests and tools only**, no product call site
+2  crates/cairn-engine/src/engine/seq.rs        `prime_outbox` → `seq_heads_unbounded` (O(pending rows of the three sequence indexes from the mark), lazy, once per term); `next_queue_seq` → `all_vqueues_unbounded` (fallback when the counter was not primed from the durable mark `floors::QUEUE_HIGH` or `finish_restore` — only the bare engine of tests and tools; the shell runs the key rebuild before the first command when unprimed)
+1  crates/cairn-engine/src/engine/step.rs       `load_journal` → `journal_unbounded` — O(journal of one invocation), inherently needed for replay; the 32 MiB cap is enforced elsewhere
+4  crates/cairn-engine/src/engine/values.rs     `invocation_held`, `stage_drop_segmented`, `stage_release_invocation` → `value_refs_under_unbounded`; `segmented_keys` → `segmented_state_entries_unbounded` — O(segments of one owner / segmented keys of one object)
+1  crates/cairn-engine/src/engine/vqueue.rs     `all_vqueues` → `all_vqueues_unbounded` — O(queue entries + tombstones of every drained entry); **tests and tools only** (`lifecycle_violations`, `recover_vqueues`): `restore_flow` walks the `Invocations` index in chunks (`Engine::restore_chunk`)
+3  crates/cairn-server/src/actor/dispatch.rs    `Command::ReadStream` → `stream_chunks_unbounded` + `stream_tail_unbounded` (O(one stream), ≤ 8 MiB per invocation); `Command::Artifacts` → `artifacts_of_unbounded` (O(artifacts of one invocation))
+1  crates/cairn-server/src/turn/drive.rs        `capture_run` → `artifacts_of_unbounded` — capturing a run (operator-triggered, rare); O(artifacts of one invocation)
+1  crates/cairn-server/src/turn/life.rs         `copy_artifacts` (restart) → `artifacts_of_unbounded` — O(artifacts of one invocation)
+1  crates/cairn-server/src/turn/rtrace.rs       `emit` → `stream_tail_unbounded` — the first durable stream write of each stream each term; O(chunks of one stream), ≤ 8 MiB
+1  crates/cairn-server/src/turn/sdk.rs          `side_frame` → `stream_tail_unbounded` — as `rtrace.rs`
+1  crates/cairn-server/src/turn/timers.rs       `purge_archived` → `artifacts_of_unbounded` — O(artifacts of one invocation), at most 32 invocations per tick

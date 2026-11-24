@@ -1,0 +1,16 @@
+{
+  "//": "e2e pulls in the TS SDK source (sample services, schema checker) \u2014 the SDK has its own lint rules, so the console's three strictest flags are dropped here.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": false
+  },
+  "include": [
+    "e2e",
+    "demo",
+    "playwright.config.ts",
+    "playwright.twonode.config.ts",
+    "playwright.screens.config.ts"
+  ]
+}

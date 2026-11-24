@@ -1,0 +1,179 @@
+# Sample cluster: SeaweedFS (S3) + two cairnflow nodes sharing one bucket.
+# See docs/self-hosting.md §5.
+#
+#   git submodule update --init          # the SlateDB fork, the Dockerfile needs it
+#   export CAIRNFLOW_ADMIN_KEY="cf_$(openssl rand -hex 24)"     # required, ≥ 32 bytes
+#   export CAIRNFLOW_CLUSTER_SECRET="$(openssl rand -hex 32)"   # required, kept outside the bucket
+#   docker compose -f deploy/docker-compose.yml up --build
+#
+#   docker compose -f deploy/docker-compose.yml exec cairn-1 cairn --server http://cairn-1:8080 cluster
+#   (the container has CAIRNFLOW_TOKEN = CAIRNFLOW_ADMIN_KEY, so `cairn` inside it sends the key)
+#
+# There are no default keys: without CAIRNFLOW_ADMIN_KEY or CAIRNFLOW_CLUSTER_SECRET
+# `docker compose` stops at once. Every published port listens on 127.0.0.1 only —
+# Docker binding 0.0.0.0 goes around the host's firewall; to open it to the network,
+# put a TLS proxy in front (docs/self-hosting.md §8).
+#
+# Do NOT use this verbatim in production: the S3 key is a sample key, for trial use only
+# (deploy/seaweed-s3.json, Admin rights on the local SeaweedFS); create per-tenant keys
+# with `cairn keys create`; SeaweedFS runs as one process on one disk, without TLS. The
+# SeaweedFS image is left at `latest`, like the repository's benchmarks — in production pin
+# the version and rerun the conditional PUT/CAS check (the node runs it at startup).
+#
+# Two things that are not obvious:
+#
+# 1. `--host` is **the container's own host name**, not 0.0.0.0. The address a node
+#    advertises to its peers (in the session lease, the routing table, the `leader` field
+#    of `503 NotLeader`) is exactly the address it binds (`node/setup.rs`: `local_addr()`
+#    of the ingress port 8080 and the internal port 8081 — the latter is not published to
+#    the host). Binding 0.0.0.0 ⇒ advertising `http://0.0.0.0:8080` ⇒ peers cannot send
+#    cross-partition messages. Binding the host name ⇒ it resolves to the container's IP
+#    on the compose network.
+# 2. By default ingress does not forward: hitting the wrong node returns `503` with a
+#    `leader` address *inside* the compose network, which the host cannot reach (Docker
+#    Desktop). Send the header `x-cairn-forward: leader` so the receiving node runs the
+#    request at the leader over the internal port (docs/admin-api.md, "Forwarding instead
+#    of `503`"; the console sends it), or call from inside the network
+#    (`docker compose exec … cairn`, or your service running in the same compose).
+
+name: cairnflow
+
+x-s3-env: &s3-env
+  # object_store reads **every** environment variable (lower-cased) as S3 configuration —
+  # see docs/self-hosting.md §3. Do not set plainly named variables such as ENDPOINT,
+  # TOKEN, REGION, BUCKET.
+  AWS_ENDPOINT: http://seaweedfs:8333
+  AWS_ACCESS_KEY_ID: dev-only-access-key # local trial only, not a secret
+  AWS_SECRET_ACCESS_KEY: dev-only-not-a-secret # local trial only
+  AWS_REGION: us-east-1
+  AWS_ALLOW_HTTP: "true"
+  AWS_VIRTUAL_HOSTED_STYLE_REQUEST: "false"
+
+x-auth-env: &auth-env
+  # The bootstrap key (cluster-admin, tenant default) and the node-to-node cluster secret:
+  # must be set in `docker compose`'s environment, there are no sample values. A cluster
+  # secret set through a variable does not live in the bucket (auth/cluster-secret), so a
+  # leaked S3 key cannot forge internal signatures or session cookies.
+  CAIRNFLOW_ADMIN_KEY: ${CAIRNFLOW_ADMIN_KEY:?set CAIRNFLOW_ADMIN_KEY (≥ 32 bytes, e.g. cf_$(openssl rand -hex 24))}
+  CAIRNFLOW_TOKEN: ${CAIRNFLOW_ADMIN_KEY:?set CAIRNFLOW_ADMIN_KEY}
+  CAIRNFLOW_CLUSTER_SECRET: ${CAIRNFLOW_CLUSTER_SECRET:?set CAIRNFLOW_CLUSTER_SECRET (≥ 32 bytes, e.g. openssl rand -hex 32)}
+
+x-cairn: &cairn
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: cairnflow:local
+  restart: unless-stopped
+  # `docker stop` sends SIGTERM ⇒ graceful shutdown (capped at 20 s), peers take over the
+  # ranges at once; Docker only sends SIGKILL after this deadline.
+  stop_grace_period: 30s
+  depends_on:
+    create-bucket:
+      condition: service_completed_successfully
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://$$(hostname):8080/health || exit 1"]
+    interval: 5s
+    timeout: 3s
+    retries: 20
+
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: >
+      server -dir=/data -s3 -s3.config=/etc/seaweed/s3.json
+      -volume.max=0 -master.volumeSizeLimitMB=1024
+    volumes:
+      - ./seaweed-s3.json:/etc/seaweed/s3.json:ro
+      - seaweed-data:/data
+    ports:
+      - "127.0.0.1:18333:8333" # S3 API for the host (optional, trial use only)
+    healthcheck:
+      # curl without -f returns 0 for any HTTP response, including a 403 "missing
+      # signature" — which is exactly the sign that the S3 port is up.
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8333"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+
+  # Creates the bucket once, then exits. Idempotent.
+  create-bucket:
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID: dev-only-access-key # local trial only, not a secret
+      AWS_SECRET_ACCESS_KEY: dev-only-not-a-secret # local trial only
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        aws --endpoint-url http://seaweedfs:8333 s3api head-bucket --bucket cairnflow 2>/dev/null
+        || aws --endpoint-url http://seaweedfs:8333 s3api create-bucket --bucket cairnflow
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
+  cairn-1:
+    <<: *cairn
+    hostname: cairn-1
+    environment:
+      <<: [*s3-env, *auth-env]
+    # `--partitions` is written to `cluster.conf` when the bucket is first
+    # initialised. Every node must pass **the same number**: with a table that was
+    # never split or merged, a mismatching number makes the node refuse to start
+    # (`ClusterConfig::open`). Split/merge ranges at runtime: `cairn ranges
+    # split|merge`.
+    command:
+      - --main-store
+      - s3://cairnflow/demo
+      - --node-id
+      - cairn-1
+      - --partitions
+      - "4"
+      - --host
+      - cairn-1
+      - --port
+      - "8080"
+      # SST disk cache: on in the deployment sample, off by default in the
+      # binary. One volume per node; delete it when the node leaves the cluster —
+      # it holds copies of customer data (docs/self-hosting.md §7 "Disk cache").
+      - --disk-cache-dir
+      - /var/lib/cairnflow/disk-cache
+      - --disk-cache-bytes
+      - "2147483648"
+    volumes:
+      - cairn-1-cache:/var/lib/cairnflow
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  cairn-2:
+    <<: *cairn
+    hostname: cairn-2
+    environment:
+      <<: [*s3-env, *auth-env]
+    command:
+      - --main-store
+      - s3://cairnflow/demo
+      - --node-id
+      - cairn-2
+      - --partitions
+      - "4"
+      - --host
+      - cairn-2
+      - --port
+      - "8080"
+      # SST disk cache: on in the deployment sample, off by default in the
+      # binary. One volume per node; delete it when the node leaves the cluster —
+      # it holds copies of customer data (docs/self-hosting.md §7 "Disk cache").
+      - --disk-cache-dir
+      - /var/lib/cairnflow/disk-cache
+      - --disk-cache-bytes
+      - "2147483648"
+    volumes:
+      - cairn-2-cache:/var/lib/cairnflow
+    ports:
+      - "127.0.0.1:8081:8080"
+
+volumes:
+  seaweed-data:
+  # Each node's disk cache — not a source of truth, always safe to delete while the node is stopped.
+  cairn-1-cache:
+  cairn-2-cache:

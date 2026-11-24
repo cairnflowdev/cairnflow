@@ -1,0 +1,31 @@
+# The acceptance list of `cargo audit` (the "cargo audit" row of `scripts/check.sh`).
+# The row runs with `--deny warnings`: every advisory — vulnerability, unmaintained,
+# unsound, yanked — that is not listed here is a FAIL. A new line comes with its reason
+# right above it, and the condition for reopening it.
+
+[advisories]
+ignore = [
+    # ── Unmaintained, no known vulnerability ────────────────────────────────────────
+    # Pulled in through the SlateDB fork (foyer, figment); replacing them is upstream's job.
+    # Reopen when SlateDB/foyer drop them, or when a vulnerability advisory appears.
+    "RUSTSEC-2025-0141", # bincode 1.3 (foyer-common): internal cache encoding, never reads customer bytes
+    "RUSTSEC-2024-0436", # paste 1.0 (foyer-memory): proc-macro, compile time only
+    "RUSTSEC-2024-0449", # unsafe-libyaml 0.2 (serde_yaml ← figment ← slatedb): cairn loads no YAML
+
+    # Unmaintained, no known vulnerability, no fixed release (advisories of 2026-09-14).
+    # chrono/chrono-tz cannot be removed: arrow, DataFusion (pinned at `=55.2.0`),
+    # object_store and the SlateDB fork require them. Cairn's own uses (`cairn-store`
+    # formatting a UTC timestamp, a test oracle in `cairn-schedule`) parse no outside input;
+    # DataFusion does parse time values and zone names in a tenant's SQL with them (`/query`,
+    # which runs in the isolated worker process). humantime comes with object_store (through
+    # DataFusion and the SlateDB fork), which only parses durations from its own config.
+    # Reopen when arrow/DataFusion and object_store drop them, or when a vulnerability
+    # advisory appears.
+    "RUSTSEC-2026-0543", # chrono 0.4 (arrow, datafusion, cairn-store): UTC formatting only
+    "RUSTSEC-2026-0555", # chrono-tz 0.10 (arrow-array, datafusion-functions): SQL time zones
+    "RUSTSEC-2026-0542", # humantime 2 (object_store): config durations, never customer bytes
+]
+
+[output]
+deny = ["warnings"]
+quiet = false

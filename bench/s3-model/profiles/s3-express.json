@@ -1,0 +1,10 @@
+{
+  "name": "s3-express-one-zone",
+  "note": "ASSUMED, not calibrated. PUT: Turso's published figures: 4 KB mean 6.4 / p99 7 ms; 512 KB mean 7.5 / p99 10 ms. GET estimated at the same order. No throttling rule: a directory bucket has a per-bucket limit far above cairn's sample load — no figures to model it yet. Written 2026-10-12.",
+  "seed": 1,
+  "latency": {
+    "put": { "p50_ms": 6, "p90_ms": 7, "p99_ms": 10, "p999_ms": 25 },
+    "get": { "p50_ms": 5, "p99_ms": 12 },
+    "all": { "p50_ms": 6, "p99_ms": 15 }
+  }
+}

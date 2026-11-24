@@ -1,0 +1,54 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems: do not file them here — see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands, a minimal handler, requests. The smaller the better.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`cairnflow --version`, or the commit you built"
+    validations:
+      required: true
+  - type: dropdown
+    id: topology
+    attributes:
+      label: Topology
+      options:
+        - single node (--data-dir)
+        - cluster
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: store
+    attributes:
+      label: Object store
+      description: "e.g. AWS S3, a self-hosted S3-compatible store, local file://, memory://"
+  - type: input
+    id: sdk
+    attributes:
+      label: SDK and mode
+      description: "SDK version; BIDI_STREAM or REQUEST_RESPONSE; Node, Fetch or Lambda adapter"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and output
+      description: Node logs around the failure, `cairn-ctl verify` output if relevant. Remove keys and tokens.
+      render: text

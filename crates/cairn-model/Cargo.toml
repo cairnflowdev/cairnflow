@@ -1,0 +1,17 @@
+[package]
+name = "cairn-model"
+description = "cairnflow protocol models for model checking (stateright): M1 — lease, session, range table, opening a Db; M2 — split/merge, GC, fork; M3 — shared WAL; M4 — the invocation lifecycle on the cairn-lifecycle core itself."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# Deliberately **not** depending on cairn-store/cairn-server: abstract models,
+# fast build, no SlateDB pulled in. M4 calls the lifecycle core itself
+# (`cairn-lifecycle`, which depends on nothing) with feature `mutations` so the
+# acceptance matrix can inject historical bugs into the core.
+[dependencies]
+cairn-lifecycle = { path = "../cairn-lifecycle", features = ["mutations"] }
+cairn-split = { path = "../cairn-split", features = ["mutations"] }
+stateright = "0.31"

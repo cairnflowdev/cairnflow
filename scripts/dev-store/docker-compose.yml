@@ -1,0 +1,53 @@
+# Copyright (c) The Cairnflow Authors
+# SPDX-License-Identifier: BUSL-1.1
+#
+# A local S3 store for tests: one SeaweedFS process on 127.0.0.1:18333. Started
+# by `scripts/dev-store/up.sh`; used by the "real S3" rows of `scripts/check.sh`,
+# chaos (`harness/chaos/chaos.ts`), `scripts/mixed-binary.sh` and the benchmark
+# drivers. Local test use only: the key in `seaweed-s3.json` is a fixed sample
+# value, not a secret, and the port is published on the loopback interface only.
+name: cairnflow-dev-store
+
+services:
+  seaweedfs:
+    image: ${SEAWEEDFS_IMAGE:-chrislusf/seaweedfs:latest}
+    command: >
+      server -dir=/data -s3 -s3.config=/etc/seaweed/s3.json
+      -volume.max=128 -master.volumeSizeLimitMB=2048
+    ports:
+      - "127.0.0.1:${DEV_STORE_PORT:-18333}:8333"
+    volumes:
+      - ./seaweed-s3.json:/etc/seaweed/s3.json:ro
+      - seaweed-data:/data
+    healthcheck:
+      # curl without -f returns 0 for any HTTP response, including a 403 "missing
+      # signature" — which is exactly the sign that the S3 port is up.
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8333"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+
+  # Creates the test buckets, then exits. Idempotent; run by `up.sh`.
+  create-buckets:
+    image: amazon/aws-cli:latest
+    profiles: ["setup"]
+    environment:
+      AWS_ACCESS_KEY_ID: dev-only-access-key # local test only, not a secret
+      AWS_SECRET_ACCESS_KEY: dev-only-not-a-secret # local test only
+      AWS_DEFAULT_REGION: us-east-1
+      BUCKETS: ${DEV_STORE_BUCKETS:-walbench walbench-restore}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        for b in $$BUCKETS; do
+        aws --endpoint-url http://seaweedfs:8333 s3api head-bucket --bucket "$$b" 2>/dev/null
+        || aws --endpoint-url http://seaweedfs:8333 s3api create-bucket --bucket "$$b" >/dev/null
+        || exit 1;
+        echo "bucket $$b ready";
+        done
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+
+volumes:
+  seaweed-data:

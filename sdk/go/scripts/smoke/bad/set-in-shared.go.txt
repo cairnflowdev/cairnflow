@@ -1,0 +1,14 @@
+// Copyright (c) The Cairnflow Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// want: does not implement
+// A shared handler cannot write state: Set takes an ObjectContext.
+package main
+
+import cairn "github.com/cairnflowdev/cairnflow/sdk/go"
+
+func total(ctx cairn.ObjectSharedContext) (int, error) {
+	return 0, cairn.Set(ctx, "total", 1)
+}
+
+func main() { _ = total }

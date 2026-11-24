@@ -1,0 +1,22 @@
+{
+  "name": "s3-standard",
+  "note": "ASSUMED, not calibrated. PUT: third-party published figures (Turso): 4 KB object mean 31 ms, p95 60, p99 102; 512 KB p99 233 ms — used as p999. GET/HEAD/LIST/DELETE: rough estimates from AWS's S3 performance optimisation guide ('first-byte latency 100–200 ms' in the tail), no measurements of our own yet. Throttling: 3 500 writes / 5 500 reads per second per prefix (AWS, read 2026-10); a new bucket has one partition; how fast S3 splits a prefix is assumed (60 s). Written 2026-10-12.",
+  "seed": 1,
+  "latency": {
+    "put": { "p50_ms": 26, "p90_ms": 50, "p99_ms": 102, "p999_ms": 233, "note": "includes conditional PUTs (If-Match / If-None-Match) — no separate figures yet" },
+    "get": { "p50_ms": 15, "p90_ms": 30, "p99_ms": 70, "p999_ms": 200 },
+    "head": { "p50_ms": 12, "p99_ms": 50 },
+    "list": { "p50_ms": 30, "p99_ms": 120 },
+    "delete": { "p50_ms": 20, "p99_ms": 80 },
+    "all": { "p50_ms": 30, "p99_ms": 120, "note": "copy, rename — cairn barely uses them" }
+  },
+  "slowdown": {
+    "write_rate": 3500,
+    "read_rate": 5500,
+    "initial_depth": 0,
+    "max_depth": 6,
+    "split_after_s": 60,
+    "client_retry": "object_store",
+    "note": "client_retry simulates the 5xx retry loop of the S3 client cairn builds (object_store 0.14: 10 attempts, backoff 100 ms ×2 with jitter, capped at 15 s; 30 s in total — S3_CLIENT_RETRY_TIMEOUT) — exactly what a real node sees"
+  }
+}

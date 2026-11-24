@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Initial JS (shell + first route)",
+    "path": ["dist/assets/index-*.js"],
+    "gzip": true,
+    "limit": "250 KB"
+  }
+]

@@ -1,0 +1,21 @@
+[package]
+name = "cairn-ui"
+description = "Cairnflow web console: the static files of `ui/dist` embedded into the binary."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+build = "build.rs"
+
+[dependencies]
+axum = { version = "0.8", default-features = false }
+# `debug-embed`: dev builds embed too, so tests see exactly what a release build
+# serves. `interpolate-folder-path`: the embedded folder is chosen by `build.rs`
+# (`ui/dist` or the placeholder page).
+rust-embed = { version = "8.13", features = ["debug-embed", "deterministic-timestamps", "interpolate-folder-path"] }
+# `Content-Type` by file extension; already in the dependency tree via reqwest.
+mime_guess = "2"
+# `ETag` of a given file set (`Ui::from_files`, tests); the embedded build uses
+# the hash rust-embed computes at build time.
+sha2 = { workspace = true }

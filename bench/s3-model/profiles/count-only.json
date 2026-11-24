@@ -1,0 +1,4 @@
+{
+  "name": "count-only",
+  "note": "No latency, no throttling — only counts requests. The cost model runs real processes with this profile."
+}

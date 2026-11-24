@@ -1,0 +1,4 @@
+[submodule "vendor/slatedb"]
+	path = vendor/slatedb
+	url = https://github.com/cairnflowdev/slatedb.git
+	branch = cairnflow-0.18

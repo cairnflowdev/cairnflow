@@ -1,0 +1,20 @@
+# cargo-nextest: `scripts/check.sh` runs the Rust rows with `cargo nextest run` when
+# nextest is installed. One process per test, all binaries in parallel — so the
+# `fail` registry (global within a process) is not shared between the tests of
+# `tests/failpoints.rs`, and long binaries no longer queue one after another.
+#
+# Keeps exactly the meaning of the `cargo test --no-fail-fast` that `check.sh` used
+# before: no stop at the first failing test, **no retries** (a flaky test must show,
+# not be hidden by nextest), no per-test time limit (the limit is the step's,
+# `CHECK_STEP_S`). Nextest does not run doctests — `check.sh` runs
+# `cargo test --doc` separately.
+
+[profile.default]
+fail-fast = false
+retries = 0
+# `skip`: prints both the PASS and the SKIP line of every test — `scripts/check-tests.sh`
+# takes the list of tests that actually ran from there.
+status-level = "skip"
+final-status-level = "fail"
+# Only reports "SLOW" after each period, never kills.
+slow-timeout = { period = "120s" }

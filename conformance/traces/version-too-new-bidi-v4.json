@@ -1,0 +1,29 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "version-too-new-bidi-v4",
+  "description": "The runtime speaks wire v4, the SDK declares maxProtocolVersion = 3 (an old version after the deployment settled on v4). The SDK must return 415, no frames, without running the handler.",
+  "source": ["sdk/typescript/test/serve.test.ts (version above the SDK cap)"],
+  "spec": ["2"],
+  "matrix_cells": [],
+  "wire_version": 4,
+  "sdk_max_protocol_version": 3,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "counter" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "status": 415,
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" }
+  ],
+  "outcome": { "kind": "refused" }
+}

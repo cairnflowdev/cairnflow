@@ -1,0 +1,58 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "stream-side-rr-v4",
+  "description": "Wire 4: a ctx.run closure appends two records to the ephemeral stream `ui`. The SDK sends one StreamAppend (side channel) before the turn-ending frame, identified by (command position, attempt, k); the journal has no entry of it, and a rerun (step already journaled) does not send it again.",
+  "source": ["crates/cairn-server/src/turn/sdk.rs::side_frame", "crates/cairn-server/tests/streams.rs"],
+  "spec": ["9.2", "streams on the side channel"],
+  "matrix_cells": [],
+  "wire_version": 4,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "streamRun" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000007580162036c6c6d", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"llm\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x0000", "hex": "00050000000000080801720422616222", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 1, result: Some(Value(b\"\\\"ab\\\"\")) })" },
+        { "from": "sdk", "channel": "side", "type": "0x000b", "name": "StreamAppend", "flags": "0x0000", "hex": "000b0000000000240a0275691a0d220b7b22746f6b223a2261227d1a0f1801220b7b22746f6b223a2262227d", "summary": "StreamAppend(StreamAppendMessage { name: \"ui\", durable: false, records: [StreamRecord { step: 0, attempt: 0, k: 0, payload: b\"{\\\"tok\\\":\\\"a\\\"}\" }, StreamRecord { step: 0, attempt: 0, k: 1, payload: b\"{\\\"tok\\\":\\\"b\\\"}\" }], close: false })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0101", "summary": "Suspension(SuspensionMessage { waiting_completions: [1], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111803", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 3, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000007580162036c6c6d", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"llm\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08012a060a0422616222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"\\\"ab\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111804", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000007580162036c6c6d", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"llm\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08012a060a0422616222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"\\\"ab\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0411", "name": "Run", "payload_hex": "580162036c6c6d", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"llm\" })" },
+    { "index": 2, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08012a060a0422616222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"\\\"ab\\\"\", segments: [], len: 0 })) })" },
+    { "index": 3, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "22646f6e6522" }
+}

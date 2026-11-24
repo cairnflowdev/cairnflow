@@ -1,0 +1,6 @@
+cairnflow-quiet-lease/1
+state=on
+knows=3
+by=bootstrap@node-alpha/1793114800397 at_ms=1793114800398
+delegation=on
+delegation_unproven=1793114800398,bootstrap,abcde

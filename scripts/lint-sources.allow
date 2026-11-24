@@ -1,0 +1,18 @@
+# Bare `tokio::time::sleep(…).await` in product code — a list frozen on
+# 2026-10-14. Read by `scripts/lint-sources.sh`.
+#
+# Line: <max count> <path> <note>. A file with more sites than its count here ⇒ FAIL.
+# A new site raises the count with a reason in the note; better, wait in a `select!`
+# together with the stop signal. When a site goes away, lower the count (the script
+# prints a note).
+#
+# Kinds: seam = `cairn_store::pace`, the only place allowed to call a bare timer:
+# background loops use `pace::beat` (cadence), `pace::poll_gap` (polling),
+# `pace::retry_pause`/`pace::Backoff` (retries); harness = simulated delays of the
+# test tooling; anything else = a site not yet converted, with a reason. When the
+# list was frozen it had 36 sites in 21 files; moving loops onto `pace` converted
+# 31 of them, leaving 5.
+
+3 crates/cairn-store/src/pace.rs               seam (beat, poll_gap, retry_pause)
+1 crates/cairn-server/src/netfilter.rs         harness (testkit: message delay)
+1 crates/cairn-store/src/failpoint/delay.rs    harness (failpoint delay)

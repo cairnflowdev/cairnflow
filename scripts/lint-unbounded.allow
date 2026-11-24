@@ -1,0 +1,26 @@
+# A direct `.await` on a SlateDB operation that retries **forever** in production
+# (`object_store_max_retries: None`) in product code — a list frozen on 2026-10-14;
+# on 2026-10-18 `build`, `close`, `await_durable` and `flush_through_unbounded`
+# joined the check and their existing sites were recorded below. Read by
+# `scripts/lint-sources.sh` (check 3).
+#
+# Line: <max count> <path> <note>. Above the count ⇒ FAIL. A new operation goes
+# through `cairn_store::config::admin_io` (`Admin` operations) or
+# `cairn_store::retry::deadline` (the future passed directly as an argument, not
+# `async { … .await }`), or is recorded here with a reason — usually "bounded at the
+# call site", which a grep cannot see.
+
+1 crates/cairn-server/src/split/ops.rs      `EngineHandle::flush_memtable` — bounded by FLUSH_MEMTABLE_BOUND in the actor (dispatch)
+1 crates/cairn-server/src/split/merge.rs    `EngineHandle::flush_memtable` — bounded by FLUSH_MEMTABLE_BOUND in the actor (dispatch)
+2 crates/cairn-server/src/tenant_purge.rs   `EngineHandle::flush_memtable` (tenant purge: flush before requesting a full compaction, in the runner and in the internal route) — bounded by FLUSH_MEMTABLE_BOUND in the actor (dispatch)
+2 crates/cairn-server/src/node/spawner.rs   `seal_failed_open` (flush + `close`) — inside an outer `timeout(seal_timeout)`
+1 crates/cairn-store/src/writer/store.rs    `RangeStore::flush` of a `Db` — called only by `PartitionWriter::{flush_memtable, seal}` (through the actor, bounded; seal_timeout bound in leadership)
+3 crates/cairn-store/src/nodewal/flush.rs   body of `flush_through_unbounded` (2 flushes + the fence's `await_durable`) — every call site wraps it in `retry::deadline`: `flush_through(…, bound)` and range adoption
+1 crates/cairn-store/src/nodewal/acquire.rs `flush_through_unbounded` of range adoption — inside an outer `retry::deadline(FLUSH_THROUGH, open_bound)`, sharing the bound with the stall failpoint `nodewal::acquire::flush_stall`
+5 crates/cairn-store/src/writer/mod.rs     `Pending::durable` (the commit's `await_durable`: the shared WAL fail-stops after `stall_max` and the handle returns an error), `PartitionWriter::seal` (2 `await_durable` + `close` — bounded by `seal_timeout` at the caller: the actor stepping down, `seal_failed_open`) and `PartitionWriter::flush_memtable_fresh` (the barrier's `await_durable` — bounded by `FLUSH_MEMTABLE_BOUND` at the caller: `actor/dispatch.rs::on_flush_memtable`)
+2 crates/cairn-store/src/config/range_db.rs `await_durable` of the `wal/shared` migration step (inside an outer `retry::deadline(WAL_DRAIN)`) and `build` of clone/union (bounded by `CLONE_BOUND` at the coordinator `split/ops.rs`, `split/merge.rs`)
+1 crates/cairn-store/src/inspect.rs         `build` of `fork_range` — only `cairn-ctl fork` (a short-lived process the operator can stop)
+1 crates/cairn-store/src/reader.rs          `PartitionReader::close` → `DbReader::close` (waits for the poll task to stop) — not yet bounded; the callers are `cairn-ctl`/`verify`
+2 crates/cairn-server/src/ctl.rs            `PartitionReader::close` of `cairn-ctl`/`verify` (short-lived process); its body is the reader.rs line
+1 crates/cairn-server/src/ctl/restore_check.rs `PartitionReader::close` of check (j) in `verify` — as the line above
+2 crates/cairn-server/src/node/running.rs   cairn's own `Session::close` — same name, not a SlateDB operation (cancels tasks, no retried I/O)

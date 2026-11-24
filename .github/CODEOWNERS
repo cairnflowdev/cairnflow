@@ -1,0 +1,3 @@
+# Default reviewers for every path: the org team, so adding a maintainer is a
+# team change, not a commit. The team must be visible and have Write access.
+* @cairnflowdev/maintainers

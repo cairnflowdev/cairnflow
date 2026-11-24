@@ -1,0 +1,59 @@
+# Word lists of the undiacritic detector of `scripts/oss/oss_lang.py`.
+#
+# [syllables]  Vietnamese syllables written without diacritics, the common
+#              ones (function words, verbs and nouns used in code and tests).
+# [english]    syllables of the list above that are also English words,
+#              common abbreviations or technical tokens (`to_le_bytes`,
+#              `ca_cert`, `ai_chat`). A run made only of these is English.
+#
+# Whitespace-separated, lower case; `#` starts a comment. Edit with care: a
+# word added to [syllables] can create false positives, a word added to
+# [english] can hide Vietnamese identifiers. `python3 -m unittest discover
+# scripts/oss/tests` has the calibration cases.
+
+[syllables]
+a ai am an ang anh ao ap au ay
+ba bac bach bai ban bang banh bao bat bau bay be bem ben benh beo bi bia bien biet bieu binh bo boc boi bom bon bong bu bua buc bui bun buoc buoi buon buong bot
+ca cac cach cai cam can canh cao cap cat cau cay che chen cheo chep chet chi chia chiem chien chieu chim chin chinh chiu cho choc choi chon chong chot chu chua chuan chuc chui chung chuoi chuong chuot chup chuyen
+co coc coi com con cong cot cu cua cuc cui cum cung cuoc cuoi cuon cuong
+da dac dai dam dan dang danh dao dap dat dau day de dem den dep det deu di dia dich diem dien dieu dinh do doan doc doi dom don dong dot du dua duc dui dung duoc duoi duong dut duy
+em gan ganh gap gat gau gay ghe ghep ghi gi gia giai giam gian giang giao giap giat giau gio gioi giong giu giua giup go goc goi gom gon gop gui
+ha hai ham han hang hanh hao hat hau hay he hen hep het hieu hien hinh ho hoa hoac hoan hoang hoat hoc hoi hom hon hong hop hu hua hung huong huu huy huyen
+im it ke kem ken kenh keo ket kha khac khach khai kham khan khang khanh khao khi khia khien khoa khoan khoang khoe khoi khong khop khu khuc khung khuon kia kich kiem kien kieu kim kip ky
+la lac lai lam lan lang lanh lao lap lat lau lay le lech len lenh leo li lich lien lieu linh lo loai loan loc loi lom lon long lop lu lua luat luc lui lun luon luong luot luu ly
+ma mai man mang manh mat mau may me men meo met mieng mien minh mo moc moi mon mong mot mu mua muc muon muoi mut my
+na nam nan nang nao nap nay ne nen neu ngai ngan ngang ngat ngay nghe nghi nghia nghiem nghien nghin ngo ngoai ngoc ngon ngu nguoc nguoi nguon nguyen nha nhac nhan nhanh nhap nhat nhau nhe nhieu nhin nhip nho nhom nhu nhung nhuong ni no noi nong nua nuoc nut
+o oi on ong
+pha phai phan phat phep phi phia phien phim phong phu phuc phuong phut
+qua quan quang quay que quen quet qui quy quyen quyet
+ra rac ram ran rang rat re ren ria rieng ro roi rom rong ru rui run rung ruot rut
+sach sai san sang sanh sao sap sat sau se seo so soat soi son song su sua suat sung suot sut
+ta tac tai tam tan tang tao tap tat tau te tem ten tha thai tham than thang thanh thao thap that thay the them then theo thi thich thiet thieu thinh tho thoa thoat thoi thom thong thu thua thuc thue thuoc thuong thuy ti tia tich tiec tien tiep tieu tim tin tinh to toa toan toc toi ton tong tot tra trai tram tran trang tranh trao trap trat tre tren tri trich trinh tro troi trom tron trong tru truc trung truoc truong tu tua tuan tuc tui tung tuoi tuong tuy tuyen tuyet
+u ung uoc uong
+va vac vai van vang vanh vao vat vay ve vem ven vet vi via viec vien viet vinh vo voi von vong vu vua vui vung vuot
+xa xac xay xe xem xep xet xin xo xoa xoi xong xu xuat xuoi xuong
+y yeu
+
+[english]
+a ai am an at ay
+ba bac ban bang bat be ben bi bin bit bo bon bot bun bus
+ca cam can cap cat chap chat chi chin chip cho chop co cod com con cot cu cub cue cum
+dam dan day de den dep do doc don dong dot du dub due dun duo
+em
+gang gap gay gem gen gin go gui gun guy
+ha hai ham hang hat he hem hen hi hip ho hoc hoe hog hop hot hug hum hung hut
+in inn it
+ken kim kin kit
+la lac lad lag lam lan lap law lay le led leg len lens li lid lie lieu lim lin lip lo loan lock log long lop lot lu lug
+ma mac mad man map mat may me men met mi mien mo mob mod mon mop mu mud mug mut
+na nag nan nap nay ne net no nod non not nu nut
+o oh on one
+pa pan phi
+quay que
+ra rac ram ran rang rap rat re rem ren rip ro rob rod rot rub rug run rung rut
+sac sang sap sat se seo set so son song sub sum sun sup
+ta tac tab tag tam tan tang tap tat tau te tee ten than that thaw the them then thin tho thou thu thug ti tic tie tin tip to toe ton tong top tot tow toy tra tram trap tri trio tub tue tug tun
+u ugh up us
+van vat ve vet vi via vie vo
+xi
+y yen yo

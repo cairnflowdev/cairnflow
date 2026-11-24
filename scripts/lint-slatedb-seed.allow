@@ -1,0 +1,13 @@
+# Sites that build a SlateDB builder with its own RNG (`AdminBuilder::new`,
+# `Db::builder`, `DbReader::builder`, `CompactorBuilder::new`,
+# `GarbageCollectorBuilder::new`, and the shortcuts `Db::open`/`DbReader::open`/
+# `Admin::builder`) outside test code — a list frozen when the simulation was made
+# deterministic (2026-10-19, see `docs/testing.md` §4). Read by
+# `scripts/lint-sources.sh` (check 9).
+#
+# Line: <max count> <path> <note>. Above the count ⇒ FAIL. Every site below takes
+# its seed (`entropy::slatedb_seed`) and clock (`entropy::slatedb_clock`) from the
+# nondeterminism source, or is reseeded by its parent builder.
+
+1 crates/cairn-store/src/config/mod.rs     `admin_builder`: every cairn `Admin` (including `cairn-ctl fork`)
+6 crates/cairn-store/src/config/open.rs    `Db::builder` (seeded in `open_db`), `CompactorBuilder`/`GarbageCollectorBuilder` (reseeded by the Db on build), 2× `DbReader::builder` (seeded in `reader_trust`), the `GarbageCollectorBuilder` of `detach_now` (seeded in place)

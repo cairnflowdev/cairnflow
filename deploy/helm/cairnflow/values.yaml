@@ -1,0 +1,54 @@
+# Sample values — see docs/self-hosting.md §4 (cluster), §7 "Disk cache", §8 (security).
+
+image:
+  repository: cairnflow
+  tag: local
+  pullPolicy: IfNotPresent
+
+# Number of nodes (pods) in the cluster. Nodes hold no state: add or remove them
+# at any time, the ranges redistribute themselves through leases.
+replicas: 3
+
+# Main store (required), e.g. s3://bucket/prefix. S3 is configured through the
+# AWS_* environment variables in the `s3Secret` secret (docs/self-hosting.md §3).
+mainStore: ""
+# Separate WAL tier (optional) and its declared atomic PUT capability (docs/self-hosting.md §3, check 3).
+walStore: ""
+walAtomicPut: ""
+
+# Number of ranges when the cluster is created — the same on every node; change it later with split/merge.
+partitions: 8
+leaseTtlMs: 10000
+
+# Secret with the keys AWS_ENDPOINT, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
+# AWS_REGION… — loaded as is as environment variables.
+s3Secret: cairnflow-s3
+# Secret with the key `CAIRNFLOW_ADMIN_KEY` (the cluster-admin bootstrap key) and,
+# optionally, `CAIRNFLOW_METRICS_KEY` (a token for `GET /metrics` only, for
+# Prometheus, ≥ 32 bytes, different from the bootstrap key — docs/runbooks/README.md
+# "Setup").
+# Put `CAIRNFLOW_CLUSTER_SECRET` (≥ 32 bytes, for example `openssl rand -hex 32`) in
+# this Secret too. Without it the first node generates the secret that signs
+# node-to-node requests and console sessions and stores it in the bucket, where
+# anyone who can read the bucket can read it (docs/self-hosting-security.md).
+adminSecret: cairnflow-admin
+
+# SST disk cache. Off by default in the binary; this sample turns it on — it
+# removes almost every SST GET after a restart or a leader change
+# (bench/query/README.md). A size-capped emptyDir: when the pod goes, the directory
+# goes, which is what docs/self-hosting.md requires when a node leaves the cluster
+# (the cache holds copies of customer data). With `medium: Memory` the cache lives
+# in the node's RAM — don't, unless you know what you are doing.
+diskCache:
+  enabled: true
+  # cairnflow's own cap (--disk-cache-bytes) — below sizeLimit to leave room for
+  # the temporary files of partial writes.
+  bytes: 8589934592 # 8 GiB
+  sizeLimit: 10Gi
+
+shutdownTimeoutMs: 20000
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

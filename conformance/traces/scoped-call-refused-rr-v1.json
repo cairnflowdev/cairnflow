@@ -1,0 +1,40 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "scoped-call-refused-rr-v1",
+  "description": "Wire 1: an old runtime silently ignores scope, so the SDK refuses ctx.scoped with a terminal error (Output failure + End), emitting no Call.",
+  "source": ["crates/cairn-server/src/discovery.rs::negotiate_wire_version"],
+  "spec": ["2", "9.1"],
+  "matrix_cells": [],
+  "wire_version": 1,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "scopedCall" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000004062066f75747075747a3608f40312316374782e73636f706564206e6565647320776972652076323b20746865206f7468657220656e6420737065616b73207631", "match": "type", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Failure(Failure { code: 500, message: \"ctx.scoped needs wire v2; the other end speaks v1\", metadata: [] })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111802", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 2, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000004062066f75747075747a3608f40312316374782e73636f706564206e6565647320776972652076323b20746865206f7468657220656e6420737065616b73207631", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Failure(Failure { code: 500, message: \"ctx.scoped needs wire v2; the other end speaks v1\", metadata: [] })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0401", "name": "Output", "payload_hex": "62066f75747075747a3608f40312316374782e73636f706564206e6565647320776972652076323b20746865206f7468657220656e6420737065616b73207631", "match": "type", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Failure(Failure { code: 500, message: \"ctx.scoped needs wire v2; the other end speaks v1\", metadata: [] })) })" }
+  ],
+  "outcome": { "kind": "completed", "failure_code": 500 }
+}

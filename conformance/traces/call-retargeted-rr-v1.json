@@ -1,0 +1,30 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "call-retargeted-rr-v1",
+  "description": "The journal has a Call to Callee/a (no result yet); the new code calls Callee/b at exactly that place. Same entry kind but a different target is a different command: the SDK must report 570 with behavior PAUSE, emitting no command.",
+  "source": ["sdk/typescript/test/handler.test.ts (command diff)"],
+  "spec": ["6", "8.5"],
+  "matrix_cells": [4],
+  "wire_version": 1,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "callRetargeted" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 2,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111802", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 2, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040d", "name": "Call", "flags": "0x0000", "hex": "040d00000000001c0a0643616c6c65651201611a013150015802620843616c6c65652f61", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"a\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: None, limit_key: None, invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/a\", placement: Default, tags: [] })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0002", "name": "Error", "flags": "0x0000", "hex": "000200000000004c08ba041245656e74727920303a206a6f75726e616c206861732043414c4c2c2063757272656e7420636f64652070726f64756365642043414c4c20286669656c647320646966666572294801", "match": "error", "error_code": 570, "error_behavior": 1, "summary": "Error(ErrorMessage { code: 570, message: \"entry 0: journal has CALL, current code produced CALL (fields differ)\", stacktrace: \"\", related_command_index: None, related_command_name: None, related_command_type: None, next_retry_delay: None, behavior: Pause })" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x040d", "name": "Call", "payload_hex": "0a0643616c6c65651201611a013150015802620843616c6c65652f61", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"a\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: None, limit_key: None, invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/a\", placement: Default, tags: [] })" }
+  ],
+  "outcome": { "kind": "failed", "code": 570, "action": "pause" }
+}

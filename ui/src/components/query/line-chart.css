@@ -1,0 +1,10 @@
+/* Copyright (c) The Cairnflow Authors */
+/* SPDX-License-Identifier: BUSL-1.1 */
+/* uPlot legend: when not hovering the values are empty — drop uPlot's ":" after the
+   series name, and hide the x-axis row (empty name) until there is a time to read. */
+.u-inline.u-live .u-series:has(.u-value:empty) th::after {
+  content: none;
+}
+.u-legend .u-series:first-child:has(.u-value:empty) {
+  display: none;
+}

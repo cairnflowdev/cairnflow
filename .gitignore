@@ -1,0 +1,7 @@
+target/
+# Local settings and credentials: never tracked.
+.claude/
+.env
+.env*
+*.local.env
+.DS_Store

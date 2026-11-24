@@ -1,0 +1,32 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "state-key-changed-rr-v1",
+  "description": "The journal has GetState \"count\"; the new code reads \"total\" at exactly that place. The SDK must report 570 with behavior PAUSE, emitting no command.",
+  "source": ["sdk/typescript/test/handler.test.ts (command diff)"],
+  "spec": ["6", "8.5"],
+  "matrix_cells": [4],
+  "wire_version": 1,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "stateKeyChanged" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 2,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111802", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 2, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0402", "name": "GetState", "flags": "0x0000", "hex": "04020000000000100a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8002", "name": "GetStateCompletion", "flags": "0x0000", "hex": "800200000000000708012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0002", "name": "Error", "flags": "0x0000", "hex": "000200000000005608ba04124f656e74727920303a206a6f75726e616c20686173204745545f53544154452c2063757272656e7420636f64652070726f6475636564204745545f535441544520286669656c647320646966666572294801", "match": "error", "error_code": 570, "error_behavior": 1, "summary": "Error(ErrorMessage { code: 570, message: \"entry 0: journal has GET_STATE, current code produced GET_STATE (fields differ)\", stacktrace: \"\", related_command_index: None, related_command_name: None, related_command_type: None, next_retry_delay: None, behavior: Pause })" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0402", "name": "GetState", "payload_hex": "0a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+    { "index": 2, "type": "0x8002", "name": "GetStateCompletion", "payload_hex": "08012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "failed", "code": 570, "action": "pause" }
+}

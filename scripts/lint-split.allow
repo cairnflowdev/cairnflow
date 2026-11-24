@@ -1,0 +1,12 @@
+# Intent CAS (writing/dropping `intent` on a `RangeEntry`), child cleanup paths
+# (`discard_range_db`, `discard_child_now`, `discard_abandoned_child`,
+# `discard_orphan`) and close-mark removals (`reopen_range_db`, `reopen_range_db_at`)
+# **outside** `crates/cairn-server/src/split/` — a list frozen on 2026-10-18. Read
+# by `scripts/lint-sources.sh` (check 7).
+#
+# Line: <max count> <path> <note>. Above the count ⇒ FAIL. Every site below
+# executes a `Plan` it has just asked `cairn_split::step` for.
+
+2 crates/cairn-server/src/ctl.rs               `intent clear`: CAS dropping the intent after `Found(Ctl)`, child cleanup after `Cleared` (Remover::Ctl)
+1 crates/cairn-server/src/gc.rs                orphan child cleanup round: `discard_child_now` after `Discard(OrphanRound|OwnOrphans)` = `DiscardDb`
+1 crates/cairn-server/src/node/spawner.rs      `heal_stale_close`: removes a stale close mark after `StaleClose` = `ReopenAtMark`

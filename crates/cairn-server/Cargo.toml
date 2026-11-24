@@ -1,0 +1,193 @@
+[package]
+name = "cairn-server"
+description = "HTTP ingress, discovery and invoker of Cairnflow."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+
+[dependencies]
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json", "query", "matched-path"] }
+bytes = { workspace = true }
+cairn-engine = { path = "../cairn-engine" }
+cairn-query = { path = "../cairn-query" }
+async-trait = "0.1"
+# Machine RAM and disk for `/metrics` — already in the tree through SlateDB.
+sysinfo = "0.35.2"
+# Server-side schedule arithmetic: checks the spec at the API, the next fire time when firing.
+cairn-schedule = { path = "../cairn-schedule" }
+# The lifecycle core: the shell `turn/life.rs` calls `step`.
+cairn-lifecycle = { path = "../cairn-lifecycle" }
+cairn-split = { path = "../cairn-split" }
+cairn-protocol = { path = "../cairn-protocol" }
+cairn-runtime = { path = "../cairn-runtime" }
+cairn-store = { path = "../cairn-store" }
+# Embedded web console, behind the `ui` feature (on by default).
+cairn-ui = { path = "../cairn-ui", optional = true }
+# Decodes queries the way axum's `Query<HashMap>` does (the auth layer,
+# `mode=`). Already in the dependency tree through reqwest/url.
+form_urlencoded = "1"
+futures = "0.3"
+futures-core = "0.3"
+# The tenant client's connector layer reads the peer address (`HttpInfo`) of the
+# socket just opened (`egress.rs`). Already in the dependency tree through
+# reqwest. The accept loop of both ports (`node/http.rs`): `http1::Builder`
+# (HTTP/1 only — h2c off) with a header read limit, graceful shutdown with
+# `graceful`. Already in the dependency tree through axum.
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", default-features = false, features = ["client-legacy", "server", "server-graceful", "service", "tokio"] }
+# `--egress-allow-cidr`/`--egress-deny-cidr`. Already in the dependency tree
+# through reqwest.
+ipnet = "2"
+# Request identity towards customer endpoints (`identity.rs`): deterministic
+# HKDF and Ed25519 (no randomness), hand-signed JWTs. Already in the dependency
+# tree through rustls.
+ring = "0.17"
+base64 = "0.22"
+prost = { workspace = true }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "json", "stream"] }
+# Gzip compression of `REQUEST_RESPONSE` bodies when the SDK declares it.
+# `miniz_oxide` is pure Rust (`forbid(unsafe_code)`); no zstd, because
+# decompressing responses is a "decompress bytes from a customer" path, which
+# `.cargo/audit.toml` forbids for zstd 0.13.
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = { workspace = true }
+slatedb = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+# The in-process network of deterministic simulation (`netfilter::LocalNet`,
+# `testkit` feature). Already in the dependency tree through axum/reqwest.
+# The view tables of `/query` call the ingress router in process.
+tower-service = "0.3"
+# `prctl(PR_SET_DUMPABLE, 0)` of the node under `--profile saas`. Already in
+# the dependency tree through tokio.
+libc = "0.2"
+tower-layer = "0.3"
+url = "2"
+http = { version = "1", optional = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "json", "ansi"] }
+
+# OpenTelemetry — **behind a feature**, off by default: the default binary does
+# not pull in the OTLP dependency tree. `--features otel`, then
+# `--otel-endpoint http://collector:4318`.
+opentelemetry = { version = "0.33", optional = true }
+opentelemetry_sdk = { version = "0.33", optional = true, features = ["rt-tokio", "logs"] }
+opentelemetry-otlp = { version = "0.33", optional = true, default-features = false, features = ["http-proto", "reqwest-blocking-client", "trace", "logs"] }
+tracing-opentelemetry = { version = "0.34", optional = true, default-features = false }
+
+[features]
+default = ["ui"]
+# The web console at `/ui/*`: every release binary has it, `--no-ui` turns it
+# off at runtime. A build without the feature (`--no-default-features`) is the
+# binary-size baseline of the `ui` row in `check.sh`.
+ui = ["dep:cairn-ui"]
+# Named failpoints + `POST/GET /admin/failpoints`. Off by default; the chaos
+# harness builds with `--features failpoints`.
+failpoints = ["cairn-store/failpoints"]
+# Per-stage timestamps (`cairn_store::probe`). Off by default; only research
+# binaries turn it on.
+probe = ["cairn-store/probe"]
+# Test harness tooling: `NodeConfig::net_filter` and the `netfilter` module — a
+# network filter between nodes in one process. Off by default; tests needing it
+# declare `required-features = ["testkit"]`. Release builds do not have that
+# field (a doctest on `NodeConfig` checks). A binary built with this feature
+# also reads a simulated S3 store profile from `CAIRNFLOW_STORE_PROFILE` (the
+# `store_profile` module) — release builds do not have that path.
+testkit = ["cairn-store/testkit", "cairn-engine/warm-check", "dep:http"]
+otel = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry"]
+
+[[bin]]
+name = "cairnflow"
+path = "src/main.rs"
+
+[dev-dependencies]
+# Fuzzing of tenant data (`tests/fuzz_tenant_input.rs`).
+proptest = { workspace = true }
+# An `ObjectStore` wrapper with tracing + seeded faults for simulation (`tests/sim_cluster.rs`).
+async-trait = "0.1"
+futures = "0.3"
+# Anti-tamper tests unpack / repack archives as a careful tamperer would.
+zstd = "0.13"
+cairn-store = { path = "../cairn-store", features = ["testkit"] }
+# Checks the lifecycle invariants after every commit of the lifecycle core's
+# shell in every test of the crate: panics when durable state leaves the valid
+# set.
+cairn-engine = { path = "../cairn-engine", features = ["lifecycle-check"] }
+anyhow = { workspace = true }
+prost = { workspace = true }
+# An h2 server faking an SDK in the `invoker` unit tests (closes bidi streams
+# cleanly, no RST_STREAM). Already in the dependency tree through reqwest.
+h2 = "0.4"
+http = "1"
+# The fake TLS edge of `tests/transport_tls.rs`. Already in the dependency tree
+# through reqwest (`rustls`).
+tokio-rustls = { version = "0.26", default-features = false, features = ["aws_lc_rs"] }
+# The source rule of `tests/english_text.rs`: parses source files to extract
+# string literals outside comments and test code. Already in the dependency
+# tree (proc macros).
+syn = { version = "2", default-features = false, features = ["full", "parsing", "visit"] }
+proc-macro2 = { version = "1", default-features = false }
+
+[[test]]
+name = "failpoints"
+required-features = ["failpoints"]
+
+[[test]]
+name = "net_partition"
+required-features = ["testkit"]
+
+# The value sweep builds holder rows with `EngineHandle::raw_commit` (no
+# product path seals values yet).
+[[test]]
+name = "values"
+required-features = ["testkit"]
+
+# A fake TLS edge in front of the SDK: the runtime trusts the test CA through
+# `EgressPolicy::tls_roots`, a field that exists only under `testkit`.
+[[test]]
+name = "transport_tls"
+required-features = ["testkit"]
+
+[[test]]
+name = "dead_destination"
+required-features = ["testkit"]
+
+# Forwarding to the leader: the network filter of `tests/common/net.rs`.
+[[test]]
+name = "forward"
+required-features = ["testkit"]
+
+[[test]]
+name = "registry_gen"
+required-features = ["testkit"]
+
+[[test]]
+name = "store_profile"
+required-features = ["testkit"]
+
+[[test]]
+name = "sim_cluster"
+required-features = ["testkit"]
+
+# Web console: the UI layer and login exist only with the `ui` feature.
+[[test]]
+name = "ui_serving"
+required-features = ["ui"]
+
+[[test]]
+name = "ui_session"
+required-features = ["ui"]
+
+# The cell as an OIDC relying party: the login flow lives in the UI layer.
+[[test]]
+name = "oidc"
+required-features = ["ui"]
+
+# Unit costs (measured by hand, every test `#[ignore]`): the SSO part needs the UI layer.
+[[test]]
+name = "cost_units"
+required-features = ["ui"]

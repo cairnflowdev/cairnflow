@@ -1,0 +1,17 @@
+{
+  // Release build: `npm pack` runs `prepack` ⇒ `tsc -p tsconfig.build.json` ⇒
+  // `dist/` (JS + `.d.ts`). The repo itself still runs `.ts` by type
+  // stripping; Node refuses to strip types under `node_modules`, so the package
+  // must ship built JS.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "sourceMap": false,
+    // `./x.ts` in the sources ⇒ `./x.js` in `dist/`.
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["src/**/*.ts"]
+}

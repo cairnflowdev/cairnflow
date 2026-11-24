@@ -1,0 +1,78 @@
+{
+  "name": "s3-standard-faults",
+  "note": "s3-standard (latency, throttling — see that profile) plus fault rates for every write. ASSUMED, not measured: rates many orders of magnitude above real S3 so that a 10-minute chaos run reaches every path. Ambiguous faults (ambiguous = written, then an error; retried = written, then the answer of object_store's own retry) only for objects cairn manages itself (lease, other): on SlateDB's WAL/manifest/SST and on the shared WAL log, AlreadyExists is a fence — a deliberate fence or fail-stop (D12, NW-2), so those only get plain faults. Written 2026-10-14.",
+  "seed": 7,
+  "latency": {
+    "put": {
+      "p50_ms": 26,
+      "p90_ms": 50,
+      "p99_ms": 102,
+      "p999_ms": 233,
+      "note": "includes conditional PUTs (If-Match / If-None-Match) — no separate figures yet"
+    },
+    "get": {
+      "p50_ms": 15,
+      "p90_ms": 30,
+      "p99_ms": 70,
+      "p999_ms": 200
+    },
+    "head": {
+      "p50_ms": 12,
+      "p99_ms": 50
+    },
+    "list": {
+      "p50_ms": 30,
+      "p99_ms": 120
+    },
+    "delete": {
+      "p50_ms": 20,
+      "p99_ms": 80
+    },
+    "all": {
+      "p50_ms": 30,
+      "p99_ms": 120,
+      "note": "copy, rename — cairn barely uses them"
+    }
+  },
+  "slowdown": {
+    "write_rate": 3500,
+    "read_rate": 5500,
+    "initial_depth": 0,
+    "max_depth": 6,
+    "split_after_s": 60,
+    "client_retry": "object_store",
+    "note": "client_retry simulates the 5xx retry loop of the S3 client cairn builds (object_store 0.14: 10 attempts, backoff 100 ms ×2 with jitter, capped at 15 s; 30 s in total — S3_CLIENT_RETRY_TIMEOUT) — exactly what a real node sees"
+  },
+  "faults": [
+    {
+      "ops": [
+        "put",
+        "delete"
+      ],
+      "fail": 0.002,
+      "note": "every write, every class: 5xx before reaching the store"
+    },
+    {
+      "ops": [
+        "put",
+        "delete"
+      ],
+      "classes": [
+        "lease",
+        "other"
+      ],
+      "ambiguous": 0.003,
+      "retried": 0.003,
+      "note": "objects cairn manages itself: written, then an error / written, then the answer of the retry"
+    },
+    {
+      "ops": [
+        "get",
+        "head",
+        "list"
+      ],
+      "fail": 0.001,
+      "note": "reads: 5xx"
+    }
+  ]
+}

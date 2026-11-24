@@ -1,0 +1,88 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "counter-resume-04-rr-v1",
+  "description": "A new leader picks up the journal durable up to entry 3 (the process died right after persist number 3). The SDK continuing must produce exactly the journal of the run that did not die.",
+  "source": ["crates/cairn-runtime/tests/mandatory.rs::replay_is_bit_exact_at_every_kill_point", "crates/cairn-runtime/tests/mandatory.rs::durable_side_effect_does_not_rerun_on_replay"],
+  "spec": ["4 Turns on one stream", "8.1", "8.3", "10 End is not a journal entry"],
+  "matrix_cells": [1],
+  "wire_version": 1,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "counter" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 4,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111804", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0402", "name": "GetState", "flags": "0x0000", "hex": "04020000000000100a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8002", "name": "GetStateCompletion", "flags": "0x0000", "hex": "800200000000000708012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e8a7f1c2b13458026205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000001000, result_completion_id: 2, name: \"sleep\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0102", "summary": "Suspension(SuspensionMessage { waiting_completions: [2], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111805", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 5, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0402", "name": "GetState", "flags": "0x0000", "hex": "04020000000000100a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8002", "name": "GetStateCompletion", "flags": "0x0000", "hex": "800200000000000708012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e8a7f1c2b13458026205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000001000, result_completion_id: 2, name: \"sleep\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800c", "name": "SleepCompletion", "flags": "0x0000", "hex": "800c00000000000408022200", "summary": "SleepCompletion(SleepCompletionNotificationMessage { completion_id: 2, void: Some(Void) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "041100000000000a58036206636861726765", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"charge\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x0000", "hex": "000500000000000d08037209226368617267656422", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 3, result: Some(Value(b\"\\\"charged\\\"\")) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0103", "summary": "Suspension(SuspensionMessage { waiting_completions: [3], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111807", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 7, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0402", "name": "GetState", "flags": "0x0000", "hex": "04020000000000100a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8002", "name": "GetStateCompletion", "flags": "0x0000", "hex": "800200000000000708012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e8a7f1c2b13458026205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000001000, result_completion_id: 2, name: \"sleep\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800c", "name": "SleepCompletion", "flags": "0x0000", "hex": "800c00000000000408022200", "summary": "SleepCompletion(SleepCompletionNotificationMessage { completion_id: 2, void: Some(Void) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "041100000000000a58036206636861726765", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"charge\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000f08032a0b0a09226368617267656422", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 3, result: Some(Value(Value { content: b\"\\\"charged\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0403", "name": "SetState", "flags": "0x0000", "hex": "04030000000000130a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111809", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 9, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000972070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0402", "name": "GetState", "flags": "0x0000", "hex": "04020000000000100a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8002", "name": "GetStateCompletion", "flags": "0x0000", "hex": "800200000000000708012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e8a7f1c2b13458026205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000001000, result_completion_id: 2, name: \"sleep\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800c", "name": "SleepCompletion", "flags": "0x0000", "hex": "800c00000000000408022200", "summary": "SleepCompletion(SleepCompletionNotificationMessage { completion_id: 2, void: Some(Void) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "041100000000000a58036206636861726765", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"charge\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000f08032a0b0a09226368617267656422", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 3, result: Some(Value(Value { content: b\"\\\"charged\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0403", "name": "SetState", "flags": "0x0000", "hex": "04030000000000130a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72070a052272657122", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"\\\"req\\\"\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0402", "name": "GetState", "payload_hex": "0a05636f756e7458016205636f756e74", "summary": "GetState(GetStateCommandMessage { key: b\"count\", result_completion_id: 1, name: \"count\" })" },
+    { "index": 2, "type": "0x8002", "name": "GetStateCompletion", "payload_hex": "08012a030a0130", "summary": "GetStateCompletion(GetStateCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+    { "index": 3, "type": "0x040c", "name": "Sleep", "payload_hex": "08e8a7f1c2b13458026205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000001000, result_completion_id: 2, name: \"sleep\" })" },
+    { "index": 4, "type": "0x800c", "name": "SleepCompletion", "payload_hex": "08022200", "summary": "SleepCompletion(SleepCompletionNotificationMessage { completion_id: 2, void: Some(Void) })" },
+    { "index": 5, "type": "0x0411", "name": "Run", "payload_hex": "58036206636861726765", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"charge\" })" },
+    { "index": 6, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08032a0b0a09226368617267656422", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 3, result: Some(Value(Value { content: b\"\\\"charged\\\"\", segments: [], len: 0 })) })" },
+    { "index": 7, "type": "0x0403", "name": "SetState", "payload_hex": "0a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+    { "index": 8, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "22646f6e6522" }
+}

@@ -1,0 +1,26 @@
+# Frees disk space on the ubuntu-24.04 runner before the Rust build.
+#
+# The runner has only ~14 GB free; `cargo test --workspace` builds more than 40 test
+# binaries, each statically linking SlateDB + tokio + axum — the first CI run on GitHub
+# ran out of disk midway (No space left on device while linking `cluster_lease`).
+# Removing unused toolchains (.NET, Android, GHC, CodeQL, swift) recovers ~25 GB.
+name: free-disk
+description: Removes unused toolchains on the Ubuntu runner to make room for target/
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        df -h / | tail -1
+        sudo rm -rf \
+          /usr/share/dotnet \
+          /usr/local/lib/android \
+          /opt/ghc /usr/local/.ghcup \
+          /opt/hostedtoolcache/CodeQL \
+          /usr/share/swift \
+          /usr/local/share/powershell \
+          /usr/local/share/chromium \
+          /usr/local/lib/node_modules || true
+        sudo docker image prune --all --force > /dev/null || true
+        df -h / | tail -1

@@ -1,0 +1,80 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!dist",
+      "!src/paraglide",
+      "!src/routeTree.gen.ts",
+      "!test-results",
+      "!playwright-report",
+      "!project.inlang",
+      "!storybook-static",
+      "!src/data/api.gen.ts",
+      "!src/data/tables.gen.ts"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "security": {
+        "noDangerouslySetInnerHtml": "error"
+      },
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "sonner": "Injects a <style> without a nonce on import — CSP blocks it. Use Base UI's Toast.",
+              "radix-ui": "Radix injects <style> (ScrollArea/Select/react-remove-scroll) — CSP blocks it. Use Base UI."
+            },
+            "patterns": [
+              {
+                "group": ["@radix-ui/*"],
+                "message": "Radix injects <style> — CSP blocks it. Use Base UI."
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/components/ui/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "useKeyWithClickEvents": "off",
+            "noLabelWithoutControl": "off"
+          }
+        }
+      }
+    }
+  ]
+}

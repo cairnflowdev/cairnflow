@@ -1,0 +1,194 @@
+# CI for every pull request and every push to main.
+#
+# Jobs:
+#   ui    — console checks (i18n, typecheck, Biome, Vitest + axe, build, size limit);
+#           uploads ui/dist, which the Rust jobs embed (crate cairn-ui embeds it at
+#           compile time — without it the binary carries a placeholder page).
+#   rust  — fmt, source lints, clippy (default, testkit, failpoints), workspace tests
+#           with nextest, doctests.
+#   ts    — SDK typecheck, SDK unit tests (including the binary-backed suites), the
+#           npm tarball smoke test, and the end-to-end matrix
+#           {single node, 4-range cluster on memory://} × {BIDI_STREAM, REQUEST_RESPONSE}.
+#   licenses — cargo audit, cargo deny, npm audit and the npm license gate.
+#
+# The full local gate is scripts/check.sh (see CONTRIBUTING.md); nightly.yml runs
+# it in full plus fault injection, simulation, chaos and the mixed-binary upgrade.
+# Third-party actions are pinned by commit SHA (tag in the trailing comment).
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # Line tables only: backtraces keep file:line while target/ stays small enough
+  # for the runner's disk (40+ statically linked test binaries).
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: npm ci && npm run check
+        working-directory: ui
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-dist
+          path: ui/dist
+          retention-days: 1
+
+  rust:
+    needs: ui
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/free-disk
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ui-dist
+          path: ui/dist
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-nextest
+      - name: cargo fmt --check
+        run: cargo fmt --all --check
+      - name: source lints
+        run: scripts/lint-sources.sh
+      - name: clippy (default features)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: clippy (testkit)
+        run: cargo clippy --workspace --all-targets --features cairn-server/testkit -- -D warnings
+      - name: clippy (failpoints)
+        run: cargo clippy --workspace --all-targets --features cairn-server/failpoints,cairn-store/failpoints -- -D warnings
+      - name: tests (nextest)
+        run: cargo nextest run --workspace --no-fail-fast
+      - name: doctests
+        run: cargo test --workspace --doc
+
+  ts:
+    needs: ui
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/free-disk
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ui-dist
+          path: ui/dist
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            sdk/typescript/package-lock.json
+            harness/package-lock.json
+      # The TypeScript tests read the binaries from target/debug/.
+      - name: build binaries
+        run: cargo build --bin cairnflow --bin cairn-query-worker --bin cairn --bin cairn-ctl
+      - name: npm ci
+        working-directory: sdk/typescript
+        run: npm ci --no-audit --no-fund
+      - name: tsc --noEmit
+        working-directory: sdk/typescript
+        run: node_modules/.bin/tsc --noEmit
+      - name: tarball smoke test
+        working-directory: sdk/typescript
+        run: node scripts/smoke-pack.ts
+      # The engine harness (chaos, mixed-binary and benchmark drivers, BUSL-1.1).
+      - name: harness npm ci
+        working-directory: harness
+        run: npm ci --no-audit --no-fund
+      - name: harness tsc --noEmit
+        working-directory: harness
+        run: node_modules/.bin/tsc --noEmit
+      - name: harness unit tests
+        working-directory: harness
+        run: node --test --test-reporter=spec --test-timeout=300000 "*/*.test.ts"
+      # node --test needs --test-timeout: its default is infinite.
+      - name: SDK unit tests
+        working-directory: sdk/typescript
+        run: node --test --test-reporter=spec --test-timeout=300000 "test/*.test.ts"
+      - name: e2e single node (BIDI_STREAM)
+        working-directory: sdk/typescript
+        env:
+          CAIRNFLOW_E2E_SDK_MODE: BIDI_STREAM
+        run: node --test --test-reporter=spec --test-timeout=120000 test/e2e.test.ts
+      - name: e2e single node (REQUEST_RESPONSE)
+        working-directory: sdk/typescript
+        env:
+          CAIRNFLOW_E2E_SDK_MODE: REQUEST_RESPONSE
+        run: node --test --test-reporter=spec --test-timeout=120000 test/e2e.test.ts
+      - name: e2e 4-range cluster (BIDI_STREAM)
+        working-directory: sdk/typescript
+        env:
+          CAIRNFLOW_E2E_SDK_MODE: BIDI_STREAM
+          CAIRNFLOW_E2E_ARGS: --main-store memory:// --cluster --partitions 4 --tick-interval-ms 100
+        run: node --test --test-reporter=spec --test-timeout=120000 test/e2e.test.ts
+      - name: e2e 4-range cluster (REQUEST_RESPONSE)
+        working-directory: sdk/typescript
+        env:
+          CAIRNFLOW_E2E_SDK_MODE: REQUEST_RESPONSE
+          CAIRNFLOW_E2E_ARGS: --main-store memory:// --cluster --partitions 4 --tick-interval-ms 100
+        run: node --test --test-reporter=spec --test-timeout=120000 test/e2e.test.ts
+
+  licenses:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-audit,cargo-deny
+      - name: cargo audit
+        run: cargo audit
+      - name: cargo deny (licenses, bans, sources)
+        run: cargo deny check licenses bans sources
+      - name: npm audit (ui, sdk, harness)
+        run: |
+          (cd ui && npm audit --audit-level=high)
+          (cd sdk/typescript && npm audit --audit-level=high)
+          (cd harness && npm audit --audit-level=high)
+      - name: npm license gate
+        run: node scripts/npm-licenses.ts ui/package-lock.json sdk/typescript/package-lock.json harness/package-lock.json

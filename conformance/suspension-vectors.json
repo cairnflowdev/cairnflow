@@ -1,0 +1,1186 @@
+{
+  "description": "Vectors shared by SDK ↔ runtime for the satisfaction rule of suspension trees (CG-4). Each vector: the tree the SDK emits (as JSON and as SuspensionMessage payload bytes — `hex`), and every combination of arrived leaves (plus noise: completion 99, signal 16, signal 'other' not in the tree) with `satisfied` per the rule: first ⇒ any leaf, all ⇒ every leaf. Runners: sdk/typescript/test/conformance.test.ts (encoding the tree ⇒ exactly the hex; treeSatisfied ⇒ exactly satisfied) and crates/cairn-runtime/tests/suspension_vectors.rs (decoding the hex ⇒ suspension_satisfied ⇒ exactly satisfied). Add a new tree when the SDK emits a new shape.",
+  "vectors": [
+    {
+      "name": "one completion (v1)",
+      "tree": {
+        "combinator": "first",
+        "completions": [
+          1
+        ],
+        "signals": [],
+        "names": []
+      },
+      "hex": "0a0101",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "first over several completions (race call/sleep)",
+      "tree": {
+        "combinator": "first",
+        "completions": [
+          1,
+          2
+        ],
+        "signals": [],
+        "names": []
+      },
+      "hex": "0a020102",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "one numbered signal",
+      "tree": {
+        "combinator": "first",
+        "completions": [],
+        "signals": [
+          3
+        ],
+        "names": []
+      },
+      "hex": "120103",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            3
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "one named signal",
+      "tree": {
+        "combinator": "first",
+        "completions": [],
+        "signals": [],
+        "names": [
+          "approve"
+        ]
+      },
+      "hex": "1a07617070726f7665",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "approve"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "all over two completions",
+      "tree": {
+        "combinator": "all",
+        "completions": [
+          1,
+          2
+        ],
+        "signals": [],
+        "names": []
+      },
+      "hex": "22060a0201022802",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "race(named signal, sleep)",
+      "tree": {
+        "combinator": "first",
+        "completions": [
+          1
+        ],
+        "signals": [],
+        "names": [
+          "approve"
+        ]
+      },
+      "hex": "0a01011a07617070726f7665",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "approve"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "approve"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "race(awakeable, sleep)",
+      "tree": {
+        "combinator": "first",
+        "completions": [
+          1
+        ],
+        "signals": [
+          17
+        ],
+        "names": []
+      },
+      "hex": "0a0101120111",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "all(sleep, numbered signal)",
+      "tree": {
+        "combinator": "all",
+        "completions": [
+          1
+        ],
+        "signals": [
+          4
+        ],
+        "names": []
+      },
+      "hex": "22080a01011201042802",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            4
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            4
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "race over five mixed leaves",
+      "tree": {
+        "combinator": "first",
+        "completions": [
+          1,
+          2
+        ],
+        "signals": [
+          17
+        ],
+        "names": [
+          "a",
+          "b"
+        ]
+      },
+      "hex": "0a0201021201111a01611a0162",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16,
+            17
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        }
+      ]
+    },
+    {
+      "name": "all over four mixed leaves",
+      "tree": {
+        "combinator": "all",
+        "completions": [
+          1,
+          2
+        ],
+        "signals": [],
+        "names": [
+          "a",
+          "b"
+        ]
+      },
+      "hex": "220c0a0201021a01611a01622802",
+      "states": [
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": false
+        },
+        {
+          "completions": [
+            99,
+            1,
+            2
+          ],
+          "signals": [
+            16
+          ],
+          "names": [
+            "other",
+            "a",
+            "b"
+          ],
+          "satisfied": true
+        }
+      ]
+    }
+  ]
+}
