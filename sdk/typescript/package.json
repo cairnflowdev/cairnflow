@@ -56,7 +56,7 @@
     "publish:beta": "node scripts/publish.ts"
   },
   "devDependencies": {
-    "@ai-sdk/openai-compatible": "3.0.65",
+    "@ai-sdk/openai-compatible": "3.0.94",
     "@ai-sdk/provider": "4.0.24",
     "@types/node": "^26.1.2",
     "ai": "7.0.132",
