@@ -59,7 +59,7 @@
     "@ai-sdk/openai-compatible": "3.0.65",
     "@ai-sdk/provider": "4.0.24",
     "@types/node": "^26.1.2",
-    "ai": "7.0.132",
+    "ai": "7.0.179",
     "typescript": "^5.9.3",
     "zod": "4.6.6"
   }
