@@ -1,0 +1,66 @@
+{
+  "name": "@cairnflow/sdk",
+  "version": "0.1.0-beta.0",
+  "description": "TypeScript SDK for Cairnflow, a durable execution engine. No runtime dependencies.",
+  "license": "Apache-2.0",
+  "homepage": "https://cairnflow.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cairnflowdev/cairnflow.git",
+    "directory": "sdk/typescript"
+  },
+  "keywords": [
+    "durable-execution",
+    "workflow",
+    "agents",
+    "cairnflow"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./fetch": {
+      "types": "./dist/fetch.d.ts",
+      "default": "./dist/fetch.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "example": "node example/order-service.ts",
+    "example:pipeline": "node example/ai-pipeline/app.ts",
+    "example:pipeline:demo": "node example/ai-pipeline/demo.ts",
+    "example:chat": "node example/ai-chat/app.ts",
+    "example:chat:demo": "node example/ai-chat/demo.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "rm -rf dist && tsc -p tsconfig.build.json",
+    "smoke:pack": "node scripts/smoke-pack.ts",
+    "publish:beta": "node scripts/publish.ts"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai-compatible": "3.0.65",
+    "@ai-sdk/provider": "4.0.24",
+    "@types/node": "^26.1.2",
+    "ai": "7.0.132",
+    "typescript": "^5.9.3",
+    "zod": "4.6.6"
+  }
+}

@@ -1,0 +1,7 @@
+# Engine primitive calls that change lifecycle state (status, queue stage, retry
+# rows) **outside the core's shell** (`crates/cairn-server/src/turn/life.rs`) — a
+# list frozen on 2026-10-17. Read by `scripts/lint-sources.sh` (check 5).
+#
+# Line: <max count> <path> <note>. Above the count ⇒ FAIL. The target is 0: every
+# state change is an output of `cairn_lifecycle::step`, executed in the shell. The
+# list was already empty when it was frozen.

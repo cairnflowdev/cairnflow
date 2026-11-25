@@ -1,0 +1,38 @@
+[package]
+name = "cairn-query"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+description = "cairnflow query layer: DataFusion over a declared index framework"
+
+[dependencies]
+cairn-store = { path = "../cairn-store" }
+cairn-engine = { path = "../cairn-engine" }
+cairn-lifecycle = { path = "../cairn-lifecycle" }
+cairn-runtime = { path = "../cairn-runtime" }
+cairn-protocol = { path = "../cairn-protocol" }
+bytes = { workspace = true }
+async-trait = "0.1"
+futures = "0.3"
+serde = { version = "1", features = ["derive"] }
+# `raw_value`: the answer of the child process passes through the parent node
+# as raw bytes (`worker.rs`) — no JSON tree is built in the parent.
+serde_json = { version = "1", features = ["raw_value"] }
+# Child process of `/query` (`worker.rs`): `_exit` from the allocator when the
+# cap is exceeded, `prctl`/`setrlimit` on Linux. Already in the dependency
+# tree through tokio.
+libc = "0.2"
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+# Pinned exactly: DataFusion changes its API every release and has been wrong
+# silently before; an upgrade goes together with the query-plan shape check
+# (`plan_shape_*`).
+datafusion = { version = "=55.2.0", default-features = false, features = ["sql", "recursive_protection", "unicode_expressions"] }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+prost = { workspace = true }
+slatedb = { workspace = true }

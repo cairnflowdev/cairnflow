@@ -1,0 +1,46 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "eager-state-bidi-v1",
+  "description": "Start carries state_map: ctx.get answers locally with GetEagerState (the result embedded in the command), no completion.",
+  "source": ["crates/cairn-runtime/tests/phase4.rs::start_carries_state_map", "crates/cairn-runtime/tests/phase4.rs::eager_state_journal_only"],
+  "spec": ["5", "9"],
+  "matrix_cells": [],
+  "wire_version": 1,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "eagerCount" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "00000000000000280a181111111111111111111111111111111111111111111111111801220a0a05636f756e74120130", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [StateEntry { key: b\"count\", value: b\"0\" }], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0407", "name": "GetEagerState", "flags": "0x0000", "hex": "04070000000000130a05636f756e746205636f756e7472030a0130", "summary": "GetEagerState(GetEagerStateCommandMessage { key: b\"count\", name: \"count\", result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0403", "name": "SetState", "flags": "0x0000", "hex": "04030000000000130a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "00000000000000280a181111111111111111111111111111111111111111111111111804220a0a05636f756e74120131", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [StateEntry { key: b\"count\", value: b\"1\" }], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0407", "name": "GetEagerState", "flags": "0x0000", "hex": "04070000000000130a05636f756e746205636f756e7472030a0130", "summary": "GetEagerState(GetEagerStateCommandMessage { key: b\"count\", name: \"count\", result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0403", "name": "SetState", "flags": "0x0000", "hex": "04030000000000130a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001262066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0407", "name": "GetEagerState", "payload_hex": "0a05636f756e746205636f756e7472030a0130", "summary": "GetEagerState(GetEagerStateCommandMessage { key: b\"count\", name: \"count\", result: Some(Value(Value { content: b\"0\", segments: [], len: 0 })) })" },
+    { "index": 2, "type": "0x0403", "name": "SetState", "payload_hex": "0a05636f756e741a030a01316205636f756e74", "summary": "SetState(SetStateCommandMessage { key: b\"count\", value: Some(Value { content: b\"1\", segments: [], len: 0 }), name: \"count\" })" },
+    { "index": 3, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472080a0622646f6e6522", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"done\\\"\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "22646f6e6522" }
+}

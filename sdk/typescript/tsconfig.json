@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    // The `.d.ts` files of the `ai` package (a devDependency of the AI SDK
+    // tests/examples) need the DOM lib (`HeadersInit`) and do not compile under
+    // `exactOptionalPropertyTypes`. Only library declaration files are skipped;
+    // the repo's own code is still fully checked.
+    "skipLibCheck": true,
+
+    // Node runs `.ts` in strip-only mode: it only erases types and emits no code.
+    // The three flags below make the compiler reject exactly the syntax that
+    // mode cannot run — parameter properties, enums, and `import` of a type.
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "example/**/*.ts", "scripts/**/*.ts"]
+}

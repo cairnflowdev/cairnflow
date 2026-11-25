@@ -1,0 +1,174 @@
+[
+  {
+    "pq": 1,
+    "sql": "SELECT service, handler, class, sum(count) AS n FROM sys_invocation_counts GROUP BY service, handler, class ORDER BY service, handler, class"
+  },
+  {
+    "pq": 2,
+    "sql": "SELECT service, handler, sum(turns) AS turns, sum(completed) AS completed, sum(failed) AS failed, max(p50_ms) AS p50_ms, max(p99_ms) AS p99_ms FROM sys_handler_stats GROUP BY service, handler ORDER BY turns DESC"
+  },
+  {
+    "pq": 3,
+    "sql": "SELECT hour_ms, sum(completed) AS completed, sum(failed) AS failed FROM sys_handler_history WHERE hour_ms >= 1700000000000 GROUP BY hour_ms ORDER BY hour_ms"
+  },
+  {
+    "pq": 4,
+    "sql": "SELECT service, handler, sum(count) AS n FROM sys_invocation_counts WHERE class = 'failed' GROUP BY service, handler ORDER BY n DESC LIMIT 10"
+  },
+  {
+    "pq": 5,
+    "sql": "SELECT c.service, sum(CASE WHEN c.class = 'failed' THEN c.count ELSE 0 END) AS failed, sum(CASE WHEN c.class = 'paused' THEN c.count ELSE 0 END) AS paused, sum(c.count) AS total FROM sys_invocation_counts c GROUP BY c.service ORDER BY failed DESC"
+  },
+  {
+    "pq": 6,
+    "sql": "SELECT queue, service, object_key, waiting, granted, blocked_on, lock_holder FROM sys_vqueue ORDER BY waiting DESC LIMIT 50"
+  },
+  {
+    "pq": 7,
+    "sql": "SELECT tenant, hour, invocations, steps, run_ms, input_tokens, output_tokens, cost_micros FROM sys_metering ORDER BY hour DESC LIMIT 48"
+  },
+  {
+    "pq": 8,
+    "sql": "SELECT id, endpoint, current_for, pinned FROM sys_deployment ORDER BY created_at_ms DESC"
+  },
+  {
+    "pq": 9,
+    "sql": "SELECT deployment, sum(completed) AS completed, sum(failed) AS failed FROM sys_handler_stats GROUP BY deployment ORDER BY failed DESC"
+  },
+  {
+    "pq": 10,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 11,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation WHERE root ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 12,
+    "sql": "SELECT id, handler, class, created_at FROM sys_invocation WHERE service = 'Shop' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 13,
+    "sql": "SELECT id, service, handler, created_at FROM sys_invocation WHERE class = 'paused' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 14,
+    "sql": "SELECT id, service, handler, class, transitioned_at FROM sys_invocation ORDER BY transitioned_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 15,
+    "sql": "SELECT id, service, handler, failure_code, failure_message, transitioned_at FROM sys_invocation WHERE class = 'failed' ORDER BY transitioned_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 16,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation WHERE class IN ('active', 'paused') ORDER BY created_at ASC, id DESC LIMIT 50"
+  },
+  {
+    "pq": 17,
+    "sql": "SELECT id, service, handler, last_failure_message, transitioned_at FROM sys_invocation WHERE class = 'paused' ORDER BY transitioned_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 18,
+    "sql": "SELECT id, service, handler, attempt, retry_at, last_failure_code, last_failure_message FROM sys_invocation WHERE retry_at IS NOT NULL ORDER BY retry_at LIMIT 50"
+  },
+  {
+    "pq": 19,
+    "sql": "SELECT caller_id, service, handler, key, due_at_ms FROM sys_delayed ORDER BY due_at_ms LIMIT 50"
+  },
+  {
+    "pq": 20,
+    "sql": "SELECT id, handler, class, created_at FROM sys_invocation WHERE service = 'Cart' AND key = 'cart-1' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 21,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation WHERE scope = 'eu' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 22,
+    "sql": "SELECT id, service, handler, class FROM sys_invocation WHERE idempotency_key = 'order-42' LIMIT 10"
+  },
+  {
+    "pq": 23,
+    "sql": "SELECT id, class, status, created_at FROM sys_invocation WHERE service = 'Approval' AND key = 'order-7' AND kind = 'workflow'"
+  },
+  {
+    "pq": 24,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation WHERE parent_id = '000000000000000000000000000000000000000000000000' ORDER BY created_at DESC, id"
+  },
+  {
+    "pq": 25,
+    "sql": "SELECT id, parent_id, service, handler, class FROM sys_invocation WHERE root_id = '000000000000000000000000000000000000000000000000' ORDER BY id"
+  },
+  {
+    "pq": 26,
+    "sql": "SELECT id, class, created_at FROM sys_invocation WHERE schedule = 'nightly' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 27,
+    "sql": "SELECT id, service, handler, tags FROM sys_invocation WHERE tags LIKE '%\"env\":\"prod\"%' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 28,
+    "sql": "SELECT id, service, handler, class FROM sys_invocation WHERE deployment = 'dp_example' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 29,
+    "sql": "SELECT id, service, handler, class FROM sys_invocation WHERE id LIKE '3fa9%' LIMIT 20"
+  },
+  {
+    "pq": 30,
+    "sql": "SELECT id, service, handler, class, created_at FROM sys_invocation WHERE created_at >= now() - INTERVAL '1 hour' ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 31,
+    "sql": "SELECT id, service, handler, duration_ms FROM sys_invocation WHERE duration_ms >= 10000 ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 32,
+    "sql": "SELECT id, service, handler, journal_len FROM sys_invocation WHERE journal_len >= 100 ORDER BY created_at DESC, id LIMIT 50"
+  },
+  {
+    "pq": 33,
+    "sql": "SELECT count(*) AS n FROM (SELECT id FROM sys_invocation WHERE class = 'failed' LIMIT 10000)"
+  },
+  {
+    "pq": 35,
+    "sql": "SELECT id, service, handler, class, status, attempt, deployment, parent_id, tags, last_failure_message FROM sys_invocation WHERE id = '000000000000000000000000000000000000000000000000'"
+  },
+  {
+    "pq": 36,
+    "sql": "SELECT index, name, entry_lite FROM sys_journal WHERE id = '000000000000000000000000000000000000000000000000' ORDER BY index"
+  },
+  {
+    "pq": 37,
+    "sql": "SELECT offset, kind, body FROM sys_log WHERE id = '000000000000000000000000000000000000000000000000' ORDER BY offset"
+  },
+  {
+    "pq": 38,
+    "sql": "SELECT name, records, total_bytes, dropped, last_offset FROM sys_stream WHERE id = '000000000000000000000000000000000000000000000000' ORDER BY name"
+  },
+  {
+    "pq": 39,
+    "sql": "SELECT state_key, value FROM sys_state WHERE service = 'Cart' AND key = 'cart-1' ORDER BY state_key"
+  },
+  {
+    "pq": 40,
+    "sql": "SELECT name, ok, value, failure_code FROM sys_promise WHERE service = 'Approval' AND key = 'order-7' ORDER BY name"
+  },
+  {
+    "pq": 41,
+    "sql": "SELECT service, key, stage, seq, id FROM sys_vqueue_entry WHERE service = 'Cart' ORDER BY key, seq"
+  },
+  {
+    "pq": 42,
+    "sql": "SELECT key, scope, has_state, invocations FROM sys_object WHERE service = 'Cart' ORDER BY key LIMIT 50"
+  },
+  {
+    "pq": 43,
+    "sql": "SELECT name, service, handler, paused, next_at, fired, missed, skipped FROM sys_schedule ORDER BY next_at"
+  },
+  {
+    "pq": 44,
+    "sql": "SELECT pattern, concurrency, rate, burst, disabled FROM sys_rule ORDER BY pattern"
+  }
+]

@@ -1,0 +1,46 @@
+[package]
+name = "cairn-engine"
+description = "Driver: connects the invocation state machine to the storage layer."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+
+[dependencies]
+bytes = { workspace = true }
+# Lifecycle core: the single retry-row codec (`codec`) and the `Plan` type the
+# shell executes through `Engine::apply_lifecycle`.
+cairn-lifecycle = { path = "../cairn-lifecycle" }
+cairn-protocol = { path = "../cairn-protocol" }
+cairn-runtime = { path = "../cairn-runtime" }
+# Pure schedule arithmetic: parses the spec of a schedule row.
+cairn-schedule = { path = "../cairn-schedule" }
+cairn-store = { path = "../cairn-store" }
+# Encodes the `pb::Value` of a segmented output (`output.rs`).
+prost = { workspace = true }
+# Definition hashing and jitter of schedule rows (`schedule.rs`).
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+# Validity check after every commit of the lifecycle-core shell: reads back
+# P1/P2/P3 of the invocation just committed and panics if `cairn_lifecycle::valid`
+# fails. Only tests enable it (`cairn-server` dev-dependency) — product builds
+# do not carry it.
+lifecycle-check = []
+# Cross-check mode of the warm machine in release builds: every use of the warm
+# machine also loads cold and compares, a mismatch panics. Debug builds always
+# have it (`debug_assertions`); `cairn-server --features testkit` enables this
+# feature for the chaos/sim binaries.
+warm-check = []
+
+[dev-dependencies]
+proptest = { workspace = true }
+cairn-store = { path = "../cairn-store", features = ["testkit"] }
+anyhow = { workspace = true }
+prost = { workspace = true }
+slatedb = { workspace = true }
+tokio = { workspace = true }

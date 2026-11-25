@@ -1,0 +1,25 @@
+# Allow list of `scripts/oss/oss_lang.py` (check 12 of `scripts/lint-sources.sh`).
+#
+#   keep <glob>  # reason        permanent: Vietnamese is the point of the file
+#   <lines> <tokens> <path>      frozen: lines with diacritics, undiacritic
+#                                Vietnamese tokens; counts may only shrink
+#
+# Frozen lines go away as translation lanes land (`oss_lang.py --write-allow`
+# lowers them and never raises one); once translation is done only `keep`
+# lines remain, and the public tree runs the lint with `--strict`.
+
+keep ui/messages/vi.json  # Vietnamese locale of the console is a feature
+keep docs/design/glossary-vi.md  # glossary for translators of the vi locale
+keep ui/src/i18n.test.ts  # i18n test fixtures check the vi locale
+keep ui/e2e/i18n.spec.ts  # i18n test fixtures check the vi locale
+keep crates/cairn-server/tests/fixtures/format10/**  # frozen format-10 sample bucket: the on-bucket format is frozen and these files pin it
+keep crates/cairn-server/tests/fixtures/format10-cluster/**  # frozen format-10 sample bucket: the on-bucket format is frozen and these files pin it
+keep scripts/oss/lang-words.txt  # word list of the undiacritic detector itself
+keep crates/cairn-server/tests/english_text.rs  # sample strings the English-text source rule must catch or skip
+keep ui/e2e/shots/console.spec.ts  # regexes match both console locales (en and vi)
+keep ui/src/components/cairn/cairn.test.tsx  # expectation in the vi locale
+keep ui/src/components/shell/user-menu.tsx  # the language picker names Vietnamese in Vietnamese
+keep ui/src/lint.test.ts  # the Vietnamese letter range of a source-rule regex
+keep sdk/typescript/test/english-text.test.ts  # the Vietnamese letter range of the SDK's English-text rule
+keep crates/cairn-server/tests/format_fixture.rs  # literals that must match data in the frozen format-10 fixture buckets
+

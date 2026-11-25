@@ -1,0 +1,61 @@
+{
+  "archived": {
+    "date": "2026-10-27",
+    "id": "dd73e7b3723e211fe33ddabff647fcc157ac048537e08feb",
+    "output": "da-them",
+    "tenant": "acme"
+  },
+  "dataFormat": 10,
+  "invocations": [
+    {
+      "id": "24d5c94a573524d34aad737022db011f16caf15a24c6adb4",
+      "journal": 3,
+      "output": "da-them",
+      "status": "completed"
+    },
+    {
+      "id": "db34e1b0f8518b3549994fd2d58fa6f2c86a1fbd2f1f4853",
+      "journal": 3,
+      "output": "da-them",
+      "status": "completed"
+    },
+    {
+      "id": "77b06c52f1523f0e1e0bf7bf35ec11bd077a16bc89e66a50",
+      "journal": 1,
+      "status": "suspended"
+    },
+    {
+      "id": "7441f77a6bf1e97f80f5591c8a6a9570e18c936360448308",
+      "journal": 3,
+      "output": "da-them",
+      "status": "completed"
+    },
+    {
+      "id": "b47b10d8122dbd1f7f52677477e37a6052b55d19fe0b22fa",
+      "journal": 3,
+      "output": "da-them",
+      "status": "completed"
+    },
+    {
+      "id": "76926d93f6be5a4513f00f3c0c1000018c4328f75bc5cc14",
+      "journal": 1,
+      "status": "suspended"
+    }
+  ],
+  "metering": {
+    "hour": "2026-10-27T15",
+    "steps": 16,
+    "tenant": "acme"
+  },
+  "ranges": [
+    2,
+    3,
+    1
+  ],
+  "retired": [
+    0
+  ],
+  "windows": {
+    "1": 300
+  }
+}

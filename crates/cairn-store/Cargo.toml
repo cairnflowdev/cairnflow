@@ -1,0 +1,63 @@
+[package]
+name = "cairn-store"
+description = "Cairnflow's storage layer: a single writer enforced by the type system, on SlateDB."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+
+[features]
+# FaultyStore and other test tooling — enabled from dev-dependencies, and from the binary's
+# `testkit` feature (simulated S3 store profiles). A profile is a JSON file, so this pulls in
+# serde — only when the feature is on.
+testkit = ["dep:serde", "dep:serde_json"]
+# Named failpoints: the `fail` crate generates code for `failpoint!` — off by default, so a
+# release binary carries nothing. Failpoint tests live in `tests/failpoints.rs` (one binary,
+# run sequentially).
+failpoints = ["fail/failpoints"]
+# Per-stage timestamps (`probe.rs`) — off by default; only the research binary turns them
+# on.
+probe = []
+
+[dependencies]
+async-trait = "0.1"
+# The pure split/merge core: `Op`, `Phase` of the op ledger (`ledger`) and the decisions of
+# the proof gate. Has no dependencies.
+cairn-split = { path = "../cairn-split" }
+crc32fast = "1"
+fail = "0.5"
+bytes = { workspace = true }
+# SlateDB clock for the deterministic simulation (`entropy`, feature `testkit`). Already in
+# the dependency tree through SlateDB.
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+getrandom = "0.3"
+futures = "0.3"
+sha2 = { workspace = true }
+slatedb = { workspace = true }
+# SlateDB's `MetricsRecorder` — the `slatedb` crate does not re-export it. Same path as the
+# fork, so it is the same crate.
+slatedb-common = { path = "../../vendor/slatedb/slatedb-common" }
+thiserror = { workspace = true }
+# SlateDB compaction id (`submit_full_compaction`, used by tenant purge). Already in the
+# dependency tree through SlateDB.
+ulid = "1.2.1"
+tokio = { workspace = true }
+tracing = { workspace = true }
+# Archive compression. Already in the dependency tree through SlateDB.
+zstd = "0.13"
+# Only for `testkit::profile` (reads store profile files).
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+# The crate's own integration tests (e.g. `tests/shared_wal.rs`) need `testkit`.
+cairn-store = { path = ".", features = ["testkit"] }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter"] }
+async-trait = "0.1"
+futures = "0.3"
+
+[[test]]
+name = "failpoints"
+required-features = ["failpoints"]

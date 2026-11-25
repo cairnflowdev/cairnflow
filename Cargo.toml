@@ -1,0 +1,155 @@
+[workspace]
+resolver = "2"
+exclude = ["vendor"]
+members = ["crates/cairn-engine", "crates/cairn-query", "crates/cairn-lifecycle", "crates/cairn-model", "crates/cairn-protocol", "crates/cairn-runtime", "crates/cairn-schedule", "crates/cairn-server", "crates/cairn-split", "crates/cairn-store", "crates/cairn-ui"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "BUSL-1.1"
+repository = "https://github.com/cairnflowdev/cairnflow"
+
+[workspace.dependencies]
+anyhow = "1"
+bytes = "1"
+prost = "0.14"
+prost-build = "0.14"
+# Fuzzing with proptest on a fixed budget inside ordinary tests: no nightly
+# needed, runs under both `cargo test` and nextest. Default features off so it
+# does not pull in `fork`/`timeout`/regex.
+proptest = { version = "1.12", default-features = false, features = ["std"] }
+sha2 = "0.10"
+slatedb = "0.18"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+
+[profile.release]
+debug = true
+
+[profile.dev]
+# Debug info stays in the object files (`.o`/`.dwo` next to target) and is not
+# copied into the binary at link time: with DataFusion the binary is ~×4 larger,
+# and copying debug info is most of a warm build's link. gdb/lldb and backtraces
+# still read it.
+split-debuginfo = "unpacked"
+
+# Full debug info for **every** dependency pushes the `.debug_info` of the `cairn`
+# binary (debug) past 4 GiB — rust-lld reports `relocation R_X86_64_32 out of
+# range` at link time (seen when `jiff`/tzdb were added). External dependencies
+# keep only line tables (backtraces still have function names and line numbers);
+# workspace crates keep full debug info.
+[profile.dev.package."*"]
+debug = "line-tables-only"
+
+# DataFusion/Arrow (the query layer) at `opt-level = 1` even in dev: at 0 they
+# inline nothing, so the dev binary's `.text` and symbol table grow ~×4 and
+# **every link** (warm build) pays for it. At 1, a warm build of `cairnflow` is
+# back near its cost before the query layer; a cold dev build gets longer once.
+[profile.dev.package.arrow]
+opt-level = 1
+[profile.dev.package.arrow-arith]
+opt-level = 1
+[profile.dev.package.arrow-array]
+opt-level = 1
+[profile.dev.package.arrow-buffer]
+opt-level = 1
+[profile.dev.package.arrow-cast]
+opt-level = 1
+[profile.dev.package.arrow-csv]
+opt-level = 1
+[profile.dev.package.arrow-data]
+opt-level = 1
+[profile.dev.package.arrow-ipc]
+opt-level = 1
+[profile.dev.package.arrow-json]
+opt-level = 1
+[profile.dev.package.arrow-ord]
+opt-level = 1
+[profile.dev.package.arrow-row]
+opt-level = 1
+[profile.dev.package.arrow-schema]
+opt-level = 1
+[profile.dev.package.arrow-select]
+opt-level = 1
+[profile.dev.package.arrow-string]
+opt-level = 1
+[profile.dev.package.datafusion]
+opt-level = 1
+[profile.dev.package.datafusion-catalog]
+opt-level = 1
+[profile.dev.package.datafusion-catalog-listing]
+opt-level = 1
+[profile.dev.package.datafusion-common]
+opt-level = 1
+[profile.dev.package.datafusion-common-runtime]
+opt-level = 1
+[profile.dev.package.datafusion-datasource]
+opt-level = 1
+[profile.dev.package.datafusion-datasource-arrow]
+opt-level = 1
+[profile.dev.package.datafusion-datasource-csv]
+opt-level = 1
+[profile.dev.package.datafusion-datasource-json]
+opt-level = 1
+[profile.dev.package.datafusion-doc]
+opt-level = 1
+[profile.dev.package.datafusion-execution]
+opt-level = 1
+[profile.dev.package.datafusion-expr]
+opt-level = 1
+[profile.dev.package.datafusion-expr-common]
+opt-level = 1
+[profile.dev.package.datafusion-functions]
+opt-level = 1
+[profile.dev.package.datafusion-functions-aggregate]
+opt-level = 1
+[profile.dev.package.datafusion-functions-aggregate-common]
+opt-level = 1
+[profile.dev.package.datafusion-functions-nested]
+opt-level = 1
+[profile.dev.package.datafusion-functions-table]
+opt-level = 1
+[profile.dev.package.datafusion-functions-window]
+opt-level = 1
+[profile.dev.package.datafusion-functions-window-common]
+opt-level = 1
+[profile.dev.package.datafusion-optimizer]
+opt-level = 1
+[profile.dev.package.datafusion-physical-expr]
+opt-level = 1
+[profile.dev.package.datafusion-physical-expr-adapter]
+opt-level = 1
+[profile.dev.package.datafusion-physical-expr-common]
+opt-level = 1
+[profile.dev.package.datafusion-physical-optimizer]
+opt-level = 1
+[profile.dev.package.datafusion-physical-plan]
+opt-level = 1
+[profile.dev.package.datafusion-pruning]
+opt-level = 1
+[profile.dev.package.datafusion-session]
+opt-level = 1
+[profile.dev.package.datafusion-sql]
+opt-level = 1
+[profile.dev.package.sqlparser]
+opt-level = 1
+
+# Model checking (`crates/cairn-model`) explores hundreds of thousands of states
+# per test: optimise the models and the checker even in the dev/test profile so
+# `cargo test -p cairn-model` runs within a minute. The checker's generics
+# (dashmap, ahash) are monomorphised in these two crates, so they are optimised
+# too.
+[profile.dev.package.cairn-model]
+opt-level = 3
+
+[profile.dev.package.stateright]
+opt-level = 3
+
+# The SlateDB fork: submodule `vendor/slatedb`, branch `cairnflow-0.18` cut from
+# tag `v0.18.0`. A fresh worktree: `git submodule update --init`.
+[patch.crates-io]
+slatedb = { path = "vendor/slatedb/slatedb" }
+
+[profile.dev.package.cairn-split]
+opt-level = 3

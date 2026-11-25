@@ -1,0 +1,59 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "scoped-call-bidi-v2",
+  "description": "Wire 2: ctx.scoped(...).call carries scope (field 7) and limit_key (8).",
+  "source": ["crates/cairn-server/src/discovery.rs::negotiate_wire_version"],
+  "spec": ["2", "9.1"],
+  "matrix_cells": [],
+  "wire_version": 2,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "scopedCall" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "runtime",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x040d", "name": "Call", "flags": "0x0000", "hex": "040d0000000000300a0643616c6c65651204776f726b1a01313a0874656e616e742d6142026b3150015802620b43616c6c65652f776f726b", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"work\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: Some(\"tenant-a\"), limit_key: Some(\"k1\"), invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/work\", placement: Default, tags: [] })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0102", "summary": "Suspension(SuspensionMessage { waiting_completions: [2], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111804", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040d", "name": "Call", "flags": "0x0000", "hex": "040d0000000000300a0643616c6c65651204776f726b1a01313a0874656e616e742d6142026b3150015802620b43616c6c65652f776f726b", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"work\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: Some(\"tenant-a\"), limit_key: Some(\"k1\"), invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/work\", placement: Default, tags: [] })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800e", "name": "CallInvocationIdCompletion", "flags": "0x0000", "hex": "800e0000000000350801820130616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162", "summary": "CallInvocationIdCompletion(CallInvocationIdCompletionNotificationMessage { completion_id: 1, invocation_id: \"abababababababababababababababababababababababab\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800d", "name": "CallCompletion", "flags": "0x0000", "hex": "800d00000000000808022a040a023432", "summary": "CallCompletion(CallCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000000e62066f757470757472040a023432", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111805", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 5, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040d", "name": "Call", "flags": "0x0000", "hex": "040d0000000000300a0643616c6c65651204776f726b1a01313a0874656e616e742d6142026b3150015802620b43616c6c65652f776f726b", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"work\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: Some(\"tenant-a\"), limit_key: Some(\"k1\"), invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/work\", placement: Default, tags: [] })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800e", "name": "CallInvocationIdCompletion", "flags": "0x0000", "hex": "800e0000000000350801820130616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162", "summary": "CallInvocationIdCompletion(CallInvocationIdCompletionNotificationMessage { completion_id: 1, invocation_id: \"abababababababababababababababababababababababab\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x800d", "name": "CallCompletion", "flags": "0x0000", "hex": "800d00000000000808022a040a023432", "summary": "CallCompletion(CallCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000000e62066f757470757472040a023432", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x040d", "name": "Call", "payload_hex": "0a0643616c6c65651204776f726b1a01313a0874656e616e742d6142026b3150015802620b43616c6c65652f776f726b", "summary": "Call(CallCommandMessage { service_name: \"Callee\", handler_name: \"work\", parameter: b\"1\", headers: [], key: \"\", idempotency_key: None, scope: Some(\"tenant-a\"), limit_key: Some(\"k1\"), invocation_id_notification_idx: 1, result_completion_id: 2, name: \"Callee/work\", placement: Default, tags: [] })" },
+    { "index": 2, "type": "0x800e", "name": "CallInvocationIdCompletion", "payload_hex": "0801820130616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162", "summary": "CallInvocationIdCompletion(CallInvocationIdCompletionNotificationMessage { completion_id: 1, invocation_id: \"abababababababababababababababababababababababab\" })" },
+    { "index": 3, "type": "0x800d", "name": "CallCompletion", "payload_hex": "08022a040a023432", "summary": "CallCompletion(CallCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" },
+    { "index": 4, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472040a023432", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"42\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "3432" }
+}

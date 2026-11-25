@@ -1,0 +1,70 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "parallel-branches-bidi-v3",
+  "description": "Promise.all of two branches, each branch two synchronous ctx.run calls. The first turn emits Run a1, Run b1 then two proposals, suspending on FIRST(1, 2) — every proposal of the turn. The next turn delivers the RunCompletions in journal order: branch a goes on (Run a2 + proposal) first, then branch b; the command sequence is a function of the journal.",
+  "source": ["sdk/typescript/test/parallel.test.ts"],
+  "spec": ["4", "8.1", "parallel branches"],
+  "matrix_cells": [],
+  "wire_version": 3,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "parallelBranches" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580162026131", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"a1\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580262026231", "summary": "Run(RunCommandMessage { result_completion_id: 2, name: \"b1\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x8000", "hex": "00058000000000080801720422613122", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 1, result: Some(Value(b\"\\\"a1\\\"\")) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0007", "name": "ProposeRunCompletionAck", "flags": "0x0000", "hex": "00070000000000020801", "summary": "ProposeRunCompletionAck(ProposeRunCompletionAckMessage { completion_id: 1 })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x8000", "hex": "00058000000000080802720422623122", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 2, result: Some(Value(b\"\\\"b1\\\"\")) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0007", "name": "ProposeRunCompletionAck", "flags": "0x0000", "hex": "00070000000000020802", "summary": "ProposeRunCompletionAck(ProposeRunCompletionAckMessage { completion_id: 2 })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000040a020102", "summary": "Suspension(SuspensionMessage { waiting_completions: [1, 2], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580362026132", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"a2\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x8000", "hex": "00058000000000080803720422613222", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 3, result: Some(Value(b\"\\\"a2\\\"\")) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0007", "name": "ProposeRunCompletionAck", "flags": "0x0000", "hex": "00070000000000020803", "summary": "ProposeRunCompletionAck(ProposeRunCompletionAckMessage { completion_id: 3 })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580462026232", "summary": "Run(RunCommandMessage { result_completion_id: 4, name: \"b2\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0005", "name": "ProposeRunCompletion", "flags": "0x8000", "hex": "00058000000000080804720422623222", "summary": "ProposeRunCompletion(ProposeRunCompletionMessage { result_completion_id: 4, result: Some(Value(b\"\\\"b2\\\"\")) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0007", "name": "ProposeRunCompletionAck", "flags": "0x0000", "hex": "00070000000000020804", "summary": "ProposeRunCompletionAck(ProposeRunCompletionAckMessage { completion_id: 4 })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000040a020304", "summary": "Suspension(SuspensionMessage { waiting_completions: [3, 4], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000002562066f7574707574721b0a195b5b226131222c226132225d2c5b226231222c226232225d5d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[[\\\"a1\\\",\\\"a2\\\"],[\\\"b1\\\",\\\"b2\\\"]]\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a18111111111111111111111111111111111111111111111111180a", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 10, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580162026131", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"a1\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580262026231", "summary": "Run(RunCommandMessage { result_completion_id: 2, name: \"b1\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08012a060a0422613122", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"\\\"a1\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08022a060a0422623122", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"\\\"b1\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580362026132", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"a2\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08032a060a0422613222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 3, result: Some(Value(Value { content: b\"\\\"a2\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0411", "name": "Run", "flags": "0x0000", "hex": "0411000000000006580462026232", "summary": "Run(RunCommandMessage { result_completion_id: 4, name: \"b2\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8011", "name": "RunCompletion", "flags": "0x0000", "hex": "801100000000000a08042a060a0422623222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 4, result: Some(Value(Value { content: b\"\\\"b2\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000002562066f7574707574721b0a195b5b226131222c226132225d2c5b226231222c226232225d5d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[[\\\"a1\\\",\\\"a2\\\"],[\\\"b1\\\",\\\"b2\\\"]]\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0411", "name": "Run", "payload_hex": "580162026131", "summary": "Run(RunCommandMessage { result_completion_id: 1, name: \"a1\" })" },
+    { "index": 2, "type": "0x0411", "name": "Run", "payload_hex": "580262026231", "summary": "Run(RunCommandMessage { result_completion_id: 2, name: \"b1\" })" },
+    { "index": 3, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08012a060a0422613122", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 1, result: Some(Value(Value { content: b\"\\\"a1\\\"\", segments: [], len: 0 })) })" },
+    { "index": 4, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08022a060a0422623122", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 2, result: Some(Value(Value { content: b\"\\\"b1\\\"\", segments: [], len: 0 })) })" },
+    { "index": 5, "type": "0x0411", "name": "Run", "payload_hex": "580362026132", "summary": "Run(RunCommandMessage { result_completion_id: 3, name: \"a2\" })" },
+    { "index": 6, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08032a060a0422613222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 3, result: Some(Value(Value { content: b\"\\\"a2\\\"\", segments: [], len: 0 })) })" },
+    { "index": 7, "type": "0x0411", "name": "Run", "payload_hex": "580462026232", "summary": "Run(RunCommandMessage { result_completion_id: 4, name: \"b2\" })" },
+    { "index": 8, "type": "0x8011", "name": "RunCompletion", "payload_hex": "08042a060a0422623222", "summary": "RunCompletion(RunCompletionNotificationMessage { completion_id: 4, result: Some(Value(Value { content: b\"\\\"b2\\\"\", segments: [], len: 0 })) })" },
+    { "index": 9, "type": "0x0401", "name": "Output", "payload_hex": "62066f7574707574721b0a195b5b226131222c226132225d2c5b226231222c226232225d5d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[[\\\"a1\\\",\\\"a2\\\"],[\\\"b1\\\",\\\"b2\\\"]]\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "5b5b226131222c226132225d2c5b226231222c226232225d5d" }
+}

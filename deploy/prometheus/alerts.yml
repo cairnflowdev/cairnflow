@@ -1,0 +1,477 @@
+# cairnflow's Prometheus alert rules.
+#
+# Every metric here is on a node's `GET /metrics` on `main`; the test
+# `crates/cairn-server/tests/ops_pack.rs` checks that (and checks that each rule has
+# a `runbook_url` pointing at a real file in `docs/runbooks/`).
+#
+# Each node is one Prometheus target (`/metrics` accepts the metrics token
+# `CAIRNFLOW_METRICS_KEY` — a role allowed only `GET /metrics` — or a cluster-admin
+# key; set `authorization` in the scrape config, see `docs/runbooks/README.md`
+# "Setup"); the `instance` label tells nodes apart. Three alerts we want but for
+# which the code does NOT export metrics YET — a cluster stuck in `upgrading`, a
+# hanging split/merge intent, GC blocked for too long — are not here: see
+# `docs/runbooks/README.md`, section "Missing metrics", and how to poll the admin
+# endpoints in the meantime.
+#
+# `runbook_url` is a path in the repository; replace it with the URL where you host
+# the documentation.
+#
+# Syntax check: `promtool check rules deploy/prometheus/alerts.yml`.
+
+groups:
+  - name: cairnflow-wal
+    rules:
+      - alert: CairnflowNodeWalFloorStuck
+        # The floor age already is "stuck for how long"; `for` only keeps a single
+        # odd scrape from firing. 600 s = `FLOOR_WARN_AFTER` — the same moment the
+        # node logs the `warn` "shared WAL floor stuck — range R has not flushed
+        # frame W to L0".
+        expr: max by (instance, node) (cairnflow_nodewal_floor_age_seconds) > 600
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Shared WAL GC floor on {{ $labels.node }} stuck for more than 10 minutes"
+          description: >-
+            The shared WAL log of node {{ $labels.node }} ({{ $labels.instance }}) has its GC
+            floor stuck at a pinned object for {{ $value | humanizeDuration }}. Pinning ranges:
+            `cairnflow_nodewal_floor_pinned{range} == 1`, or `cairn-ctl wal floors`.
+            WAL objects below the floor are not cleaned up — the bucket grows, and the
+            pinning range is not flushing its memtable to L0.
+          runbook_url: docs/runbooks/shared-wal-floor-stalled.md
+
+      - alert: CairnflowNodeFailStops
+        # Baseline: a 3-hour soak run had 7 of them. A single one (a session expiring
+        # after a network blip) is not worth an alert; several in half an hour mean
+        # a store fault is being amplified into a node incident.
+        expr: sum by (instance, cause) (increase(cairnflow_failstop_total[30m])) > 2
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} abandoned its incarnation repeatedly because of {{ $labels.cause }}"
+          description: >-
+            Node {{ $labels.instance }} abandoned its incarnation (fail-stop or lost session)
+            more than 2 times in 30 minutes because of '{{ $labels.cause }}'. Each time every
+            range of the node has to be claimed again and in-flight turns fail. Node log:
+            "session lost — dropping every partition" (with `cause`, `reason`).
+          runbook_url: docs/runbooks/node-fail-stop.md
+
+  - name: cairnflow-gc
+    rules:
+      - alert: CairnflowGcClockSkew
+        # The GC runner's clock is off from the store's by more than min_age/4 (or
+        # cannot be measured) ⇒ the round drops every deletion. Safe (it keeps), but
+        # the bucket is not cleaned for as long as the clock stays off.
+        expr: sum by (instance, round) (increase(cairnflow_gc_clock_blocked_total[1h])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "GC on {{ $labels.instance }} skipped round {{ $labels.round }} because of clock skew"
+          description: >-
+            GC runner {{ $labels.instance }} measured its clock as off from the store's
+            `last_modified` (or could not measure it) and dropped every deletion of round
+            '{{ $labels.round }}'. Latest measurement: `cairnflow_gc_clock_skew_ms`. Node log:
+            "GC: dropping every deletion of the round (clock-skew gate)".
+          runbook_url: docs/runbooks/gc-and-barriers.md
+
+  - name: cairnflow-session
+    rules:
+      - alert: CairnflowSessionUnexpirable
+        # A session that stands still while the `expired` CAS keeps failing (a torn
+        # object, a stale read) is only considered dead after an observer overwrites
+        # the record. A failed overwrite ⇒ nobody takes that node's ranges.
+        expr: sum by (instance) (increase(cairnflow_session_rearm_total{outcome="failed"}[30m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} cannot mark a standing-still session"
+          description: >-
+            Node {{ $labels.instance }} saw a session stand still for more than 3 TTLs without
+            being able to CAS it to `expired`, and overwriting the record failed too. That
+            session is still considered alive — nobody takes its ranges. Node log: "session
+            stood still and could not be marked, the overwrite failed too — NOT considered
+            dead" (with `session`, `error`).
+          runbook_url: docs/runbooks/session-cannot-mark-expired.md
+
+  - name: cairnflow-clock-rate
+    rules:
+      - alert: CairnflowClockRateUntrusted
+        # The node's monotonic clock runs at a rate off from store time (Date header,
+        # 5-minute window) by more than ±10% ⇒ the node stops leading. Leases assume
+        # nodes drift from each other by less than 1.5×.
+        expr: cairnflow_clock_rate_untrusted > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }}'s clock rate is off — the node stopped leading"
+          description: >-
+            Node {{ $labels.instance }} measures the rate of its monotonic clock against the
+            object store's time (`cairnflow_clock_rate`, 1 = correct) and found it off by more
+            than ±10% with certainty. It released every range and the coordinator role, and
+            takes nothing back until the clock is within ±5%. Node log: "node monotonic clock
+            rate is off against the store beyond the threshold".
+          runbook_url: docs/runbooks/clock-rate-skew.md
+
+  - name: cairnflow-slow-node
+    rules:
+      - alert: CairnflowNodeSlowScoreMax
+        # The score is computed every 10 s round; the node yields after 2 rounds at 100
+        # (if --slow-shed is on and its p99 PUT is > 2× the other nodes' median).
+        expr: cairnflow_slow_score >= 100
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} has slow score 100"
+          description: >-
+            The slow score of {{ $labels.instance }} has been at its maximum (100) for more than
+            1 minute: session renewals or shared WAL PUTs take over 1 s. If
+            `cairnflow_draining` = 1 the node is yielding its leadership; if not, find out why
+            it does not yield (the whole bucket is slow, it is the only node, another node is
+            yielding, or --slow-shed is off).
+          runbook_url: docs/runbooks/slow-node-self-yield.md
+
+      - alert: CairnflowNodeDrainingLong
+        # Recovery needs a score < 10 for 5 minutes straight, and the score takes 5
+        # minutes to fall from 100 to 1: a normal yield-and-recover takes about 10 minutes.
+        expr: cairnflow_draining == 1
+        for: 20m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} has been draining for more than 20 minutes"
+          description: >-
+            {{ $labels.instance }} yielded its leadership because it was slow and has not
+            recovered after 20 minutes. The node is alive but takes no ranges: the cluster is
+            running one node short.
+          runbook_url: docs/runbooks/slow-node-self-yield.md
+
+  - name: cairnflow-l0
+    rules:
+      - alert: CairnflowRangeL0Throttling
+        # Throttle level > 0 ⇔ L0 ≥ --l0-soft (back to 0 after 5 s below the threshold).
+        # Independent of the --l0-soft value the node runs with. With --l0-soft 0
+        # (throttling off) this rule is silent — only CairnflowRangeL0Stalling remains.
+        expr: max by (instance, range) (cairnflow_range_l0_reject_ratio) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Range {{ $labels.range }} L0-throttled for 10 minutes straight"
+          description: >-
+            Range {{ $labels.range }} (leader {{ $labels.instance }}) has had L0 ≥ --l0-soft
+            for 10 minutes: compaction cannot keep up, and new work for the range gets
+            `429 range_overloaded` with probability {{ $value | humanizePercentage }}.
+          runbook_url: docs/runbooks/range-l0-overload.md
+
+      - alert: CairnflowRangeL0Stalling
+        # SlateDB's flusher refuses to upload the memtable because L0 hit its cap (8):
+        # the range's writes stop entirely rather than just being throttled.
+        expr: max by (instance, range) (increase(cairnflow_range_slatedb_l0_stalls_total[10m])) > 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Range {{ $labels.range }} keeps hitting the L0 wall"
+          description: >-
+            SlateDB of range {{ $labels.range }} (leader {{ $labels.instance }}) reported
+            l0_stall in every 10-minute window for 10 minutes: writes stand still waiting for
+            compaction.
+          runbook_url: docs/runbooks/range-l0-overload.md
+
+  - name: cairnflow-ranges
+    rules:
+      - alert: CairnflowRangesWithoutLeader
+        # Each node counts by its own routing table; take the node that sees the fewest
+        # leaders. A split/merge window is only 0.3–0.7 s, so 2 minutes is far enough.
+        expr: max(cairnflow_partitions) - min(cairnflow_partitions_with_leader) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $value }} ranges without a leader for more than 2 minutes"
+          description: >-
+            Some ranges in the table have no leader: every call to their keys gets 503.
+            `GET /cluster` shows which (empty `leader`). Common causes: every remaining
+            node is draining, child ranges of an unfinished split/merge, or the old owner
+            died and its session has not expired yet (≈ one --lease-ttl-ms).
+          runbook_url: docs/runbooks/stuck-intent.md
+
+      - alert: CairnflowAutoSplitFailed
+        # Failed AFTER writing the intent (and rolled back). Not "a hanging intent" —
+        # there is no metric for that yet — but the one case where the cluster writes an
+        # intent on its own and then fails.
+        expr: sum by (instance) (increase(cairnflow_auto_split_failed_total[30m])) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "Auto split failed after its intent on {{ $labels.instance }}"
+          description: >-
+            An automatic split on {{ $labels.instance }} wrote its intent, then failed and
+            rolled back in the last 30 minutes. Check that the table has no intent left:
+            `cairn ranges` (or `cairn-ctl verify`), and read the node log around that time.
+          runbook_url: docs/runbooks/stuck-intent.md
+
+  - name: cairnflow-invocations
+    rules:
+      - alert: CairnflowInfraStuck
+        # The rescue net moves an invocation to `paused` 577: it has redelivered it 50
+        # times in a row (or for 1 hour) and the turn still fails before leaving a
+        # single durable appointment.
+        expr: sum by (instance) (increase(cairnflow_rescue_infra_stuck_total[15m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Invocation paused 577 (INFRA_STUCK) on {{ $labels.instance }}"
+          description: >-
+            The rescue net of a range on {{ $labels.instance }} stopped redelivering an
+            invocation and moved it to `paused` with code 577: its turns keep failing in the
+            infrastructure (store, state reads) without writing a single durable appointment.
+            Node log: "invocation stuck on infrastructure — paused 577".
+            `cairn invocations --status paused`.
+          runbook_url: docs/runbooks/invocation-stuck-on-infra.md
+
+      - alert: CairnflowPoisonRows
+        # An inbound/signal row that cannot be decoded: kept, not deleted; counted once
+        # per row per term, so a leader change counts it again.
+        expr: sum by (instance) (increase(cairnflow_poison_rows_total[15m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Undecodable message rows on {{ $labels.instance }}"
+          description: >-
+            The drainer of a range on {{ $labels.instance }} met an inbound/signal row that
+            cannot be decoded in the last 15 minutes. The row is kept; whoever waits on it
+            (if known) is `paused` with code 577. Node log: "undecodable row — kept, not
+            deleted" (with `seq`, `waiter`).
+          runbook_url: docs/runbooks/invocation-stuck-on-infra.md
+
+      - alert: CairnflowScrubFindings
+        # The state scrubber — `verify` running in the background, dry, on the D-d
+        # runner — sees a finding still present in two consecutive rounds (600 s per
+        # round by default): the self-healing rounds had a full cycle and did not fix it.
+        expr: max by (check) (cairnflow_scrub_findings) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The state scrubber sees {{ $value }} '{{ $labels.check }}' findings"
+          description: >-
+            Verify check '{{ $labels.check }}' is still present after two scrub rounds. The
+            scrubber repairs nothing. Log of the D-d runner: "scrubber: … — still present
+            after two rounds" (with `check`, `range`, `healed_by`). `cairn-ctl verify` gives
+            the same list, together with the round that should have healed each finding.
+          runbook_url: docs/runbooks/state-scrubber.md
+
+      - alert: CairnflowScrubStale
+        # No complete scrub round in 6 h. Only a node that has been the scrubber runner
+        # prints the age; the cluster-wide `min` is the current runner. The pace
+        # stretches with the request budget (`--scrub-requests-per-hour`): at the
+        # default, 6 h is ~2 500 ranges; beyond that, or with rounds failing/incomplete
+        # over and over, the scrubber's findings arrive later than 6 h.
+        expr: min(cairnflow_scrub_last_complete_age_seconds) > 21600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The state scrubber has had no complete round for {{ $value | humanizeDuration }}"
+          description: >-
+            The latest complete scrub round is older than 6 h. `cairnflow_scrub_wait_seconds`
+            large: the pace stretched to fit the request budget (`cairnflow_scrub_round_requests`
+            per round); `cairnflow_scrub_rounds_total{result="failed"|"incomplete"}` rising:
+            rounds fail or skip too many items.
+          runbook_url: docs/runbooks/state-scrubber.md
+
+      - alert: CairnflowSdkTimeouts
+        # Turns dropped because the SDK made no progress within the wait limit: under
+        # `REQUEST_RESPONSE` the limit wraps the whole turn, so a model call step longer
+        # than the limit is cut and rerun — each time is token cost the customer pays.
+        # A few odd turns are normal (an endpoint dying mid-turn); a steady rate over 15
+        # minutes is a handler that runs longer than its limit.
+        expr: sum by (instance) (rate(cairnflow_sdk_timeouts_total[15m])) * 900 > 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Turns cut by the SDK wait limit on {{ $labels.instance }}"
+          description: >-
+            More than 5 turns per 15 minutes on {{ $labels.instance }} were dropped because
+            the SDK made no progress within the wait limit (the contract's
+            `inactivityTimeout`, otherwise `--inactivity-timeout-ms`). A dropped turn is
+            rescheduled and reruns the unfinished step — with `REQUEST_RESPONSE` that means
+            rerunning the whole `ctx.run` in progress. Node log: "SDK made no progress within
+            the allowed limit — turn dropped, retry scheduled" (with `invocation`, `mode`,
+            `limit_ms`).
+          runbook_url: docs/runbooks/turn-sdk-wait-cap.md
+
+  - name: cairnflow-disk-cache
+    rules:
+      - alert: CairnflowDiskCacheThrashing
+        # SST disk cache (`--disk-cache-dir`): evicting steadily while hitting less
+        # than half the time — the cap is smaller than the hot SST set. Slow, not wrong.
+        expr: >-
+          rate(cairnflow_disk_cache_evictions_total[15m]) > 0
+          and on (instance)
+          rate(cairnflow_disk_cache_hits_total[15m])
+            / (rate(cairnflow_disk_cache_hits_total[15m]) + rate(cairnflow_disk_cache_misses_total[15m]))
+            < 0.5
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Disk cache of {{ $labels.instance }} keeps evicting, hit rate below 50%"
+          description: >-
+            The SST disk cache of node {{ $labels.instance }} hit its --disk-cache-bytes cap
+            and kept evicting entries for 30 minutes while its hit rate stayed below one half.
+            SST reads go to the object store; raise the cap or add nodes.
+          runbook_url: docs/runbooks/disk-cache.md
+
+  - name: cairnflow-registry
+    rules:
+      - alert: CairnflowRegistryStale
+        # Closed when unsure: the node has not confirmed its key registry is fresh for
+        # longer than 2·`--deploy-refresh-ms`, so it answers 503 to every request
+        # authenticated with a registry key. `for` keeps a short store outage from firing.
+        expr: max by (instance) (cairnflow_registry_stale) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} closes authenticated requests because its key registry may be stale"
+          description: >-
+            Node {{ $labels.instance }} could not read `control/registry-gen` or `auth/keys`
+            from the bucket, nor hear a fresh `view` from the coordinator, for more than two
+            registry refresh ticks: it answers 503 to requests authenticated with a registry
+            key (`cairnflow_registry_stale_rejected_total` rising). Node log: "cannot confirm
+            the key registry is still fresh — closing requests …".
+          runbook_url: docs/runbooks/key-registry-stale.md
+
+  - name: cairnflow-tenants
+    rules:
+      - alert: CairnflowTenantsBookRejected
+        # Fail safe: a broken `tenants` object (a corrupt line, a mistyped limit value)
+        # ⇒ the node keeps the old registry. New limits do not take effect, and every
+        # `PUT /admin/tenants/…` returns 500 until the object is fixed. `for` exceeds one
+        # registry refresh tick (30 s) so that a half-finished manual edit does not fire.
+        expr: max by (instance) (cairnflow_tenants_book_rejected) > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} cannot read the tenants registry and keeps the old one"
+          description: >-
+            The `tenants` object on the bucket cannot be decoded (node log: "tenants book
+            corrupt, keeping the one in use", with the broken line). Node
+            {{ $labels.instance }} keeps the per-tenant limits of the last good read;
+            `cairnflow_tenants_book_rejected_total` counts rejected reads. A newly started
+            node cannot come up until the registry is fixed.
+          runbook_url: docs/runbooks/tenants-registry-broken.md
+
+  - name: cairnflow-auth
+    rules:
+      - alert: CairnflowAuthFailuresSpike
+        # Counted only, not blocked: a Bearer 401 is not blocked per IP. The alert is
+        # for the operator to look — a client with a misconfigured key, or a probing run.
+        # Threshold 5/s for 10 minutes: an SDK that forgot to rotate its key after a
+        # revocation usually stays below that.
+        expr: sum by (instance) (rate(cairnflow_auth_failures_total{kind!="missing"}[5m])) > 5
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Node {{ $labels.instance }} receives more than 5 failed authentications per second"
+          description: >-
+            `cairnflow_auth_failures_total` has been rising steadily for more than 10 minutes.
+            The node does not block Bearer 401 per IP (a 256-bit key cannot be guessed;
+            blocking behind a proxy hurts customers behind NAT). The node log aggregates them
+            every minute: "ingress authentication failures".
+          runbook_url: docs/runbooks/auth-failures.md
+
+  - name: cairnflow-api
+    rules:
+      - alert: CairnflowHttp5xxRate
+        # `5xx` responses of the public API: leader-change windows and temporary store
+        # errors (`503`) are shorter than 10 minutes; longer means the cluster or the
+        # store is really broken.
+        expr: >-
+          sum by (instance) (rate(cairnflow_http_responses_total{class="5xx"}[10m]))
+            / sum by (instance) (rate(cairnflow_http_responses_total[10m])) > 0.05
+          and on (instance)
+          sum by (instance) (rate(cairnflow_http_responses_total[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 5% of {{ $labels.instance }}'s API responses are 5xx"
+          description: >-
+            {{ $value | humanizePercentage }} of the public API responses on
+            {{ $labels.instance }} have been 5xx for 10 minutes. 503 means "retry" (not the
+            leader, the range is changing, store_unavailable); a 500 carries a code to look up
+            in the node log.
+          runbook_url: docs/runbooks/api-5xx-and-ack-latency.md
+
+      - alert: CairnflowAckLatencyHigh
+        # p99 of the `/send` ack: the invocation is durable before the answer — the WAL
+        # flush interval plus the PUT to the store. On S3 in the same region the p99 is a
+        # few hundred ms.
+        expr: >-
+          histogram_quantile(0.99,
+            sum by (instance, le) (rate(cairnflow_ack_seconds_bucket{route="send"}[10m]))) > 2
+          and on (instance)
+          sum by (instance) (rate(cairnflow_ack_seconds_count{route="send"}[10m])) > 0.05
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p99 /send ack on {{ $labels.instance }} above 2 s"
+          description: >-
+            The p99 time from receipt to 2xx of POST …/send on {{ $labels.instance }} has been
+            {{ $value | humanizeDuration }} for 15 minutes. See cairnflow_commit_wait_seconds
+            (waiting for the WAL flush) and cairnflow_object_put_seconds (PUTs to the store).
+          runbook_url: docs/runbooks/api-5xx-and-ack-latency.md
+
+  - name: cairnflow-cost
+    rules:
+      - alert: CairnflowStoreRequestRateHigh
+        # Class A request cost: 20/s ≈ 72 000/hour. A threshold sized for a small
+        # cell, not an error.
+        expr: sum by (instance) (rate(cairnflow_store_requests_total{op=~"put|list|copy"}[1h])) > 20
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "Class A store requests from {{ $labels.instance }} above 20/s"
+          description: >-
+            {{ $labels.instance }} sends {{ $value | humanize }} class A requests (put, list,
+            copy) per second to the store, averaged over one hour. Find which op and which
+            tenant drive it.
+          runbook_url: docs/runbooks/request-store.md
+
+  - name: cairnflow-host
+    rules:
+      - alert: CairnflowMemoryHigh
+        # Running out of RAM restarts the machine, and every tenant of the cell loses
+        # its turns at once.
+        expr: cairnflow_process_resident_bytes / cairnflow_memory_limit_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.instance }} uses more than 85% of its RAM"
+          description: >-
+            The RSS of node {{ $labels.instance }} has been {{ $value | humanizePercentage }}
+            of the RAM limit (cgroup, otherwise the whole machine) for 10 minutes.
+          runbook_url: docs/runbooks/host-memory-and-disk.md
+
+      - alert: CairnflowDiskLow
+        # The disk of the data directory (`file://`) or of the SST disk cache.
+        expr: cairnflow_disk_free_bytes / cairnflow_disk_total_bytes < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk '{{ $labels.dir }}' of {{ $labels.instance }} below 10% free"
+          description: >-
+            The disk holding directory '{{ $labels.dir }}' of node {{ $labels.instance }} has
+            had {{ $value | humanizePercentage }} free for 10 minutes.
+          runbook_url: docs/runbooks/host-memory-and-disk.md

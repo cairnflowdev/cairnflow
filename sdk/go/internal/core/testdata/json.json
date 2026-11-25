@@ -1,0 +1,140 @@
+[
+ {
+  "value": null,
+  "negativeZero": false,
+  "json": "null"
+ },
+ {
+  "value": true,
+  "negativeZero": false,
+  "json": "true"
+ },
+ {
+  "value": 0,
+  "negativeZero": false,
+  "json": "0"
+ },
+ {
+  "value": 0,
+  "negativeZero": true,
+  "json": "0"
+ },
+ {
+  "value": 1,
+  "negativeZero": false,
+  "json": "1"
+ },
+ {
+  "value": -17,
+  "negativeZero": false,
+  "json": "-17"
+ },
+ {
+  "value": 0.1,
+  "negativeZero": false,
+  "json": "0.1"
+ },
+ {
+  "value": 1.5,
+  "negativeZero": false,
+  "json": "1.5"
+ },
+ {
+  "value": 1e+21,
+  "negativeZero": false,
+  "json": "1e+21"
+ },
+ {
+  "value": 1e-7,
+  "negativeZero": false,
+  "json": "1e-7"
+ },
+ {
+  "value": 123456789.125,
+  "negativeZero": false,
+  "json": "123456789.125"
+ },
+ {
+  "value": 9007199254740991,
+  "negativeZero": false,
+  "json": "9007199254740991"
+ },
+ {
+  "value": 1e+300,
+  "negativeZero": false,
+  "json": "1e+300"
+ },
+ {
+  "value": 5e-324,
+  "negativeZero": false,
+  "json": "5e-324"
+ },
+ {
+  "value": "",
+  "negativeZero": false,
+  "json": "\"\""
+ },
+ {
+  "value": "plain",
+  "negativeZero": false,
+  "json": "\"plain\""
+ },
+ {
+  "value": "<a href=\"x\">&amp;</a>",
+  "negativeZero": false,
+  "json": "\"<a href=\\\"x\\\">&amp;</a>\""
+ },
+ {
+  "value": "line\u2028sep\u2029par",
+  "negativeZero": false,
+  "json": "\"line\u2028sep\u2029par\""
+ },
+ {
+  "value": "tab\tnl\nret\r",
+  "negativeZero": false,
+  "json": "\"tab\\tnl\\nret\\r\""
+ },
+ {
+  "value": "\b\f\u0001\u001f\u007f",
+  "negativeZero": false,
+  "json": "\"\\b\\f\\u0001\\u001f\u007f\""
+ },
+ {
+  "value": "back\\slash \\u2028 literal",
+  "negativeZero": false,
+  "json": "\"back\\\\slash \\\\u2028 literal\""
+ },
+ {
+  "value": "\u00e9 \u4e2d\u6587 \ud83d\ude00",
+  "negativeZero": false,
+  "json": "\"\u00e9 \u4e2d\u6587 \ud83d\ude00\""
+ },
+ {
+  "value": [],
+  "negativeZero": false,
+  "json": "[]"
+ },
+ {
+  "value": [
+   1,
+   "two",
+   null
+  ],
+  "negativeZero": false,
+  "json": "[1,\"two\",null]"
+ },
+ {
+  "value": {
+   "a": 1,
+   "b": [
+    true,
+    false
+   ],
+   "c": {
+    "d": "e"
+   }
+  },
+  "negativeZero": false,
+  "json": "{\"a\":1,\"b\":[true,false],\"c\":{\"d\":\"e\"}}"
+ }
+]

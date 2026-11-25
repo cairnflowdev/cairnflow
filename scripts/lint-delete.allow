@@ -1,0 +1,25 @@
+# Direct object delete calls (`.delete(&…)`, `store.delete(…)`, `.delete_stream(…)`)
+# in product code — a list frozen on 2026-10-14. Read by `scripts/lint-sources.sh`
+# (check 4).
+#
+# Line: <max count> <path> <note>. Above the count ⇒ FAIL. Deleting customer data
+# goes through `cairn_store::proof::DeleteProof` (a typed gate) and the trash; the
+# sites below are something else, and each line says why.
+
+5 crates/cairn-store/src/trash.rs              the trash itself: deletes the original after copying (already through the gate), deletes expired entries after re-checking; entries held in place (artifacts): object then entry, requires a `DeleteProof`
+2 crates/cairn-store/src/nodewal/log.rs        shared WAL frames below the durable floor (NW-7; outside the trash: the floor proves no range needs them) and old floor marks
+1 crates/cairn-store/src/nodewal/gc.rs         `gc_log` calls `LogStore::delete` for frames below a floor just written durably
+3 crates/cairn-store/src/config/gate.rs        probe objects of the write gate (not data)
+1 crates/cairn-store/src/store_probe.rs        conditional-GET probe object `control/probe/<nonce>` (not data; a key private to the run)
+1 crates/cairn-store/src/session/tracker.rs    session records that ended ≥ 6 TTL ago
+1 crates/cairn-store/src/session/incarnation.rs incarnation marks below the one just claimed (the new mark keeps the lower bound; not customer data)
+1 crates/cairn-store/src/gc_barrier.rs         expired GC barriers (re-read and still expired)
+2 crates/cairn-store/src/deployments.rs        the operator's deployment delete command (API); its "being removed" mark (not data)
+1 crates/cairn-store/src/failpoint/delay.rs    store wrapper forwarding `delete_stream`
+1 crates/cairn-store/src/local.rs              `LocalCas` (simulated CAS of a local directory) forwards `delete_stream`
+1 crates/cairn-store/src/metered.rs            `MeteredStore` (request counting) forwards `delete_stream`
+1 crates/cairn-server/src/ingress/admin.rs     the operator's API key delete command
+1 crates/cairn-server/src/tenant_purge.rs     `Keys::delete` — removes the API keys of a tenant past `purging-ms=` (tenant purge): configuration, a CAS of the `auth/keys` registry, not the object store
+3 crates/cairn-server/src/bin/cairn.rs         the CLI's HTTP DELETE commands (not the object store)
+2 crates/cairn-server/src/ctl/backup.rs        `cairn-ctl backup prune --apply`: copies in the backup's **target store**, not live customer data; the backup manifest is deleted before the data, recorded in audit/ctl
+1 crates/cairn-store/src/ops_report.rs         `cairn-ctl --report-to-bucket` reports beyond the count/age limit: not customer data, only `ops-reports/<valid id>` names, the age mark is `last_modified` of the report just written

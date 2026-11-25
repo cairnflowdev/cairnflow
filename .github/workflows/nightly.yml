@@ -1,0 +1,186 @@
+# Nightly: the full local gate plus the expensive rows.
+#
+#   check        — scripts/check.sh in full (failpoints, ambiguous-op faults
+#                  "each-once", testkit network harness, e2e matrix incl. the
+#                  split-mid-run row, Playwright on Chromium) with SeaweedFS as the
+#                  local S3, so the S3 rows run instead of being skipped.
+#   sim          — deterministic simulation: 64 swarm seeds plus the determinism
+#                  criterion, first seed derived from the commit so every night
+#                  covers different seeds and a red run replays from the same commit.
+#   chaos        — 10-minute chaos run on SeaweedFS (kill -9, range split/merge).
+#   mixed-binary — previous release (N−1) and this commit in one cluster, then a
+#                  rolling upgrade. Skipped until a previous release tag exists.
+#
+# A short chaos run is a safety net, not an acceptance test: releases also need a
+# one-hour release-profile chaos run (CHAOS_DURATION_S=3600 CHAOS_PROFILE=release).
+# Third-party actions are pinned by commit SHA (tag in the trailing comment).
+
+name: nightly
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # 02:17 UTC
+  workflow_dispatch:
+    inputs:
+      chaos_duration_s:
+        description: Chaos duration (seconds)
+        required: false
+        default: "600"
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # No debuginfo, as in ci.yml: with line tables the test binaries alone need
+  # about 56 GB, more than the runner's disk; without it, 32 GB.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_DEV_STRIP: debuginfo
+  # Local SeaweedFS credentials from scripts/dev-store/seaweed-s3.json —
+  # test-only values for a throwaway container, not secrets.
+  AWS_ENDPOINT: http://localhost:18333
+  AWS_ACCESS_KEY_ID: dev-only-access-key
+  AWS_SECRET_ACCESS_KEY: dev-only-not-a-secret
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_ALLOW_HTTP: "true"
+  AWS_VIRTUAL_HOSTED_STYLE_REQUEST: "false"
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/free-disk
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: cargo-nextest,cargo-audit,cargo-deny
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: ./.github/actions/seaweedfs
+      # The console's Playwright rows need Chromium; WebKit and Firefox run in the
+      # Playwright container and only need Docker, which the runner has.
+      - name: Chromium for Playwright (ui/)
+        working-directory: ui
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Allow unprivileged user namespaces
+        # Ubuntu 24.04 restricts them through AppArmor; query_isolation's
+        # node_as_pid_1_answers_queries starts the node under `unshare --user`.
+        run: |
+          f=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          if [ -e "$f" ]; then sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0; fi
+      - name: scripts/check.sh
+        # The runner's speed is not known: leave out the tests that measure load or
+        # time (the `ci` profile of .config/nextest.toml).
+        env:
+          NEXTEST_PROFILE: ci
+        run: scripts/check.sh
+      - name: Keep step logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: check-logs
+          path: target/check/*.log
+          if-no-files-found: ignore
+
+  sim:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      # tokio_unstable seeds the RNG of select! (determinism); separate target dir.
+      CARGO_TARGET_DIR: target/sim-unstable
+      RUSTFLAGS: --cfg tokio_unstable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - uses: ./.github/actions/free-disk
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: simulation — 64 swarm seeds + determinism criterion
+        run: |
+          seed=$((16#${GITHUB_SHA:0:7}))
+          echo "first seed: $seed (commit ${GITHUB_SHA:0:7})"
+          CAIRN_SIM_SEED=$seed CAIRN_SIM_SEEDS=64 \
+            cargo test -p cairn-server --features testkit --test sim_cluster -- --nocapture
+
+  chaos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CHAOS_DURATION_S: ${{ github.event.inputs.chaos_duration_s || '600' }}
+      CHAOS_SPLIT_EVERY_S: "60"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      # SeaweedFS, not MinIO: a local erasure-coded MinIO can tear a lease object
+      # when the client is killed mid-CAS, so chaos on it measures the store.
+      - uses: ./.github/actions/seaweedfs
+      - name: build binaries
+        run: cargo build --bin cairnflow --bin cairn-query-worker
+      - name: chaos (SeaweedFS, 3 nodes, kill -9 every 10 s, split/merge every 60 s)
+        run: CHAOS_STORE_URI="s3://walbench/chaos-${GITHUB_RUN_ID}" node harness/chaos/chaos.ts
+      - name: SeaweedFS logs
+        if: failure()
+        run: docker logs --tail 300 seaweedfs
+
+  mixed-binary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          # Needs the previous release tag.
+          fetch-depth: 0
+      - name: System tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: Rust toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: ./.github/actions/seaweedfs
+      - name: mixed cluster (two old + one new, split/merge, rolling upgrade)
+        env:
+          MIXED_OLD_REV: previous-tag
+        run: MIXED_STORE_URI="s3://walbench/mixed-${GITHUB_RUN_ID}" scripts/mixed-binary.sh
+      - name: Keep node logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mixed-binary-logs
+          path: target/mixed/*.log
+          if-no-files-found: ignore
+      - name: SeaweedFS logs
+        if: failure()
+        run: docker logs --tail 300 seaweedfs

@@ -1,0 +1,27 @@
+# Headless: a stable DNS name for each pod (debugging, per-pod scraping). A node
+# advertises its pod IP (`--host`), not this name. Port 8081 is the node-to-node
+# internal port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cairnflow.name" . }}-peers
+  labels: {{- include "cairnflow.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector: {{- include "cairnflow.labels" . | nindent 4 }}
+  ports:
+    - { name: ingress, port: 8080 }
+    - { name: internal, port: 8081 }
+---
+# Ingress for clients and SDKs. Hitting the wrong node returns 503 with `leader`
+# (unless the request asks to be forwarded) — cairn's clients follow it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cairnflow.name" . }}
+  labels: {{- include "cairnflow.labels" . | nindent 4 }}
+spec:
+  selector: {{- include "cairnflow.labels" . | nindent 4 }}
+  ports:
+    - { name: ingress, port: 8080 }

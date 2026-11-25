@@ -1,0 +1,36 @@
+# The workspace's clippy configuration.
+#
+# Blocks new sources of nondeterminism: the deterministic simulation
+# (`tests/sim_cluster.rs`) replays a seed into the same trace only when time,
+# randomness, map iteration order and outbound requests all go through a seam the
+# simulation can replace. Each entry points at that seam. Sites with a reason to use
+# the original directly (the seam itself, CLIs, test harnesses) carry
+# `#[allow(clippy::disallowed_methods/types, reason = "…")]` at the site.
+#
+# A bare `tokio::time::sleep` in a background loop is not listed here: clippy cannot
+# tell a background loop from a `select!` branch, so it is a check with a list of
+# known sites in `scripts/lint-sources.sh`.
+
+disallowed-methods = [
+  { path = "std::time::SystemTime::now", reason = "wall-clock time goes through `cairn_store::entropy::now`/`now_ms` (the simulation installs virtual time)" },
+  { path = "std::time::Instant::now", reason = "the monotonic clock is `tokio::time::Instant` (the simulation runs tokio's virtual clock)" },
+  { path = "std::process::id", reason = "the pid goes through `cairn_store::entropy::process_id`" },
+  { path = "getrandom::fill", reason = "random bytes go through `cairn_store::entropy::fill`" },
+  { path = "getrandom::u32", reason = "random bytes go through `cairn_store::entropy::fill`" },
+  { path = "getrandom::u64", reason = "random bytes go through `cairn_store::entropy::fill`" },
+  { path = "rand::thread_rng", reason = "random bytes go through `cairn_store::entropy::fill` (identity keys are HKDF-derived, no RNG)" },
+  { path = "rand::rng", reason = "random bytes go through `cairn_store::entropy::fill`" },
+  { path = "chrono::Utc::now", reason = "wall-clock time goes through `cairn_store::entropy::now`" },
+  { path = "chrono::Local::now", reason = "wall-clock time goes through `cairn_store::entropy::now`" },
+  { path = "reqwest::RequestBuilder::send", reason = "outbound HTTP requests go through `egress::send` (the simulation routes them through `netfilter::LocalNet`)" },
+  { path = "reqwest::Client::execute", reason = "outbound HTTP requests go through `egress::execute` (the simulation routes them through `netfilter::LocalNet`)" },
+]
+
+disallowed-types = [
+  { path = "std::time::Instant", reason = "the monotonic clock is `tokio::time::Instant` (the simulation runs tokio's virtual clock)" },
+  { path = "std::collections::HashMap", reason = "random hasher per process: use `cairn_store::entropy::HashMap` (fixed keys under the simulation) or `BTreeMap`" },
+  { path = "std::collections::HashSet", reason = "random hasher per process: use `cairn_store::entropy::HashSet` (fixed keys under the simulation) or `BTreeSet`" },
+  { path = "rand::rngs::OsRng", reason = "random bytes go through `cairn_store::entropy::fill` (identity keys are HKDF-derived, no `OsRng`)" },
+  { path = "rand::rngs::ThreadRng", reason = "random bytes go through `cairn_store::entropy::fill`" },
+  { path = "std::hash::RandomState", reason = "random keys per process: use `cairn_store::entropy::HashState`" },
+]

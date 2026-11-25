@@ -1,0 +1,10 @@
+// Copyright (c) The Cairnflow Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// want: use of internal package
+// The SDK's internal packages are not part of its API.
+package main
+
+import _ "github.com/cairnflowdev/cairnflow/sdk/go/internal/wire"
+
+func main() {}

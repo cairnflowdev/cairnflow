@@ -1,0 +1,20 @@
+# The Dockerfile's build context is an allow list: Cargo.toml, Cargo.lock,
+# crates/, vendor/ (SlateDB fork), ui/ (console, built in its own stage) and the
+# license files. Everything else is excluded so the context stays small.
+*
+!Cargo.toml
+!Cargo.lock
+!crates/
+!vendor/
+!ui/
+!LICENSE
+!LICENSING.md
+!NOTICE
+!dist-licenses/
+**/target/
+**/node_modules/
+**/.git
+vendor/slatedb/website/
+ui/dist/
+**/*.log
+**/.DS_Store

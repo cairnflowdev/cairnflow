@@ -1,0 +1,56 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "state-keys-rr-v1",
+  "description": "ctx.getKeys() on the lazy path: GetStateKeys promises completion 0x8006.",
+  "source": ["crates/cairn-runtime/tests/phase4.rs::get_state_keys_full_lifecycle"],
+  "spec": ["5", "8.1"],
+  "matrix_cells": [],
+  "wire_version": 1,
+  "mode": "REQUEST_RESPONSE",
+  "handler": { "service": "Conformance", "name": "stateKeys" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0406", "name": "GetStateKeys", "flags": "0x0000", "hex": "040600000000000b580162076765744b657973", "summary": "GetStateKeys(GetStateKeysCommandMessage { result_completion_id: 1, name: \"getKeys\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "00010000000000030a0101", "summary": "Suspension(SuspensionMessage { waiting_completions: [1], waiting_signals: [], waiting_named_signals: [], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111803", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 3, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0406", "name": "GetStateKeys", "flags": "0x0000", "hex": "040600000000000b580162076765744b657973", "summary": "GetStateKeys(GetStateKeysCommandMessage { result_completion_id: 1, name: \"getKeys\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8006", "name": "GetStateKeysCompletion", "flags": "0x0000", "hex": "800600000000000b08018a01060a01610a0162", "summary": "GetStateKeysCompletion(GetStateKeysCompletionNotificationMessage { completion_id: 1, state_keys: Some(StateKeys { keys: [b\"a\", b\"b\"] }) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001562066f7574707574720b0a095b2261222c2262225d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[\\\"a\\\",\\\"b\\\"]\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111804", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0406", "name": "GetStateKeys", "flags": "0x0000", "hex": "040600000000000b580162076765744b657973", "summary": "GetStateKeys(GetStateKeysCommandMessage { result_completion_id: 1, name: \"getKeys\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x8006", "name": "GetStateKeysCompletion", "flags": "0x0000", "hex": "800600000000000b08018a01060a01610a0162", "summary": "GetStateKeysCompletion(GetStateKeysCompletionNotificationMessage { completion_id: 1, state_keys: Some(StateKeys { keys: [b\"a\", b\"b\"] }) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001562066f7574707574720b0a095b2261222c2262225d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[\\\"a\\\",\\\"b\\\"]\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x0406", "name": "GetStateKeys", "payload_hex": "580162076765744b657973", "summary": "GetStateKeys(GetStateKeysCommandMessage { result_completion_id: 1, name: \"getKeys\" })" },
+    { "index": 2, "type": "0x8006", "name": "GetStateKeysCompletion", "payload_hex": "08018a01060a01610a0162", "summary": "GetStateKeysCompletion(GetStateKeysCompletionNotificationMessage { completion_id: 1, state_keys: Some(StateKeys { keys: [b\"a\", b\"b\"] }) })" },
+    { "index": 3, "type": "0x0401", "name": "Output", "payload_hex": "62066f7574707574720b0a095b2261222c2262225d", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"[\\\"a\\\",\\\"b\\\"]\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "5b2261222c2262225d" }
+}

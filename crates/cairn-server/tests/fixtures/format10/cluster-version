@@ -1,0 +1,7 @@
+cairnflow-cluster-version/1
+version=2
+min_binary=7
+call_prefix=on
+call_placement=on
+streams=on
+schedules=on

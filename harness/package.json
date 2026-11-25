@@ -1,0 +1,21 @@
+{
+  "name": "cairnflow-harness",
+  "private": true,
+  "description": "Engine harness for Cairnflow: chaos, mixed-binary and benchmark drivers. Uses the TypeScript SDK from ../sdk/typescript by relative source import.",
+  "license": "BUSL-1.1",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "node --test \"*/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "chaos": "node chaos/chaos.ts",
+    "mixed": "node chaos/mixed.ts",
+    "bench:load": "node bench/load.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^5.9.3"
+  }
+}

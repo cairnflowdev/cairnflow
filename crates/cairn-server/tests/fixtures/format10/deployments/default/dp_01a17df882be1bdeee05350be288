@@ -1,0 +1,1 @@
+{"id":"dp_01a17df882be1bdeee05350be288","tenant":"default","createdAtMs":1793114800830,"endpoint":"http://127.0.0.1:42869","wireVersion":1,"protocolMode":"REQUEST_RESPONSE","services":[{"name":"Cart","ty":"VIRTUAL_OBJECT","handlers":[{"name":"add","ty":"EXCLUSIVE"},{"name":"hold","ty":"EXCLUSIVE"}]}]}

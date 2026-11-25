@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cairnflow:conformance:trace-schema:v1",
+  "title": "Cairnflow Service Protocol conformance trace",
+  "description": "One file = one scenario: the frame conversation between runtime and SDK, the expected final journal, the wire version and the transport mode. Semantics: conformance/README.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "name",
+    "description",
+    "source",
+    "spec",
+    "matrix_cells",
+    "wire_version",
+    "mode",
+    "handler",
+    "clock_ms",
+    "initial_journal_len",
+    "connections",
+    "journal",
+    "outcome"
+  ],
+  "properties": {
+    "format": { "const": "cairnflow-conformance/1" },
+    "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "description": { "type": "string" },
+    "source": {
+      "description": "The (Rust) test harness the scenario was taken from.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "spec": {
+      "description": "The sections of docs/protocol-v1.md the scenario checks.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "matrix_cells": {
+      "description": "Cells of the 'Mandatory tests' matrix in protocol-v1.md §10 (1 bit-exact replay, 2 out-of-order notifications, 3 run/ack ordering, 4 journal mismatch).",
+      "type": "array",
+      "items": { "type": "integer", "enum": [1, 2, 3, 4] }
+    },
+    "wire_version": {
+      "description": "The negotiated wire version. The runner sends content-type application/vnd.cairnflow.invocation.v<N>.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "segments": {
+      "description": "Wire v6 traces only: the segments the runner serves — GET url ⇒ 200 with exactly the hex bytes. The SDK fetches them from Start.segment_urls and checks sha256 and length.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "hex"],
+        "properties": {
+          "url": { "type": "string" },
+          "hex": { "$ref": "#/$defs/hex" }
+        }
+      }
+    },
+    "sdk_max_protocol_version": {
+      "description": "version-too-new traces only: the runner pins the SDK's maxProtocolVersion at this number (below wire_version) yet still sends content-type v<wire_version> — the deployment settled on the newer version, the SDK process was downgraded to an older release. No negotiation.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "mode": { "enum": ["BIDI_STREAM", "REQUEST_RESPONSE"] },
+    "handler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service", "name"],
+      "properties": {
+        "service": { "type": "string" },
+        "name": { "type": "string", "description": "Conformance handler (README §Handlers)." }
+      }
+    },
+    "clock_ms": {
+      "description": "The SDK's wall clock, fixed for the whole trace (ms since the epoch). ctx.sleep(ms) journals clock_ms + ms.",
+      "type": "integer"
+    },
+    "initial_journal_len": {
+      "description": "Number of entries durable before the first connection (1 = only Input). Greater than 1: a new leader picked up the journal.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "connections": {
+      "description": "In order. BIDI_STREAM: one h2c stream. REQUEST_RESPONSE: one HTTP request — every runtime frame is the request body, every SDK frame is the response body.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/connection" }
+    },
+    "journal": {
+      "description": "The expected final journal, from entry 0 (Input).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "outcome": { "$ref": "#/$defs/outcome" }
+  },
+  "$defs": {
+    "hex": { "type": "string", "pattern": "^([0-9a-f]{2})*$" },
+    "u16hex": { "type": "string", "pattern": "^0x[0-9a-f]{4}$" },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verify", "close", "frames"],
+      "properties": {
+        "status": {
+          "description": "The SDK must refuse the connection with this HTTP status (a too-new wire version: 415), no frames.",
+          "type": "integer"
+        },
+        "verify": {
+          "description": "true = a verifying connection: the runtime replays the whole final journal and the SDK may only return End (§10 'End is not a journal entry').",
+          "type": "boolean"
+        },
+        "close": {
+          "description": "Who ends it. sdk: the SDK closes its side after the last frame. runtime: the runtime closes the stream (what the SDK waits for can only be answered by the outside world) and the SDK must close too without sending any further journal frame.",
+          "enum": ["sdk", "runtime"]
+        },
+        "replay": {
+          "description": "Wire v5 (protocol-v1.md §9.3, v5 traces only): sdk_restart = the runner restarts the SDK (dropping its replay cache) before this connection; miss = the SDK must return 409 + header cairn-replay: miss, an empty body, no frames; cache = the value of the cairn-replay-cache header the SDK must return (absent = the SDK must not return that header).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sdk_restart": { "type": "boolean" },
+            "miss": { "type": "boolean" },
+            "cache": { "type": "integer", "minimum": 1 },
+            "stale_sdk": { "type": "boolean", "description": "Round 2: this connection (and every later one) goes to a stale SDK replica — one that received every earlier connection except the last 200 one." },
+            "held": { "type": "integer", "minimum": 1, "description": "Round 2: the k of the cairn-replay-held header the SDK must return with 409." },
+            "held_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "Round 2: the h_k (hex) of the cairn-replay-held header." }
+          }
+        },
+        "frames": { "type": "array", "items": { "$ref": "#/$defs/frame" } }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "channel", "type", "name", "flags", "hex", "summary"],
+      "properties": {
+        "from": { "enum": ["runtime", "sdk"] },
+        "channel": {
+          "description": "journal: the frame belongs to the ordered stream of the invocation. side: side channel — never becomes a journal entry, never waits for a durable ack, changes nothing in the journal wherever it is interleaved (protocol-v1.md §9.2).",
+          "enum": ["journal", "side"]
+        },
+        "type": { "$ref": "#/$defs/u16hex" },
+        "name": { "type": "string" },
+        "flags": { "$ref": "#/$defs/u16hex" },
+        "hex": { "$ref": "#/$defs/hex", "description": "The whole frame on the wire: 8-byte header + payload." },
+        "match": {
+          "description": "How an SDK frame is compared. Absent = bytes (whole frame, byte by byte). type: only the first 4 header bytes (type + flags) — the payload carries text the SDK chooses itself. error: like type, plus ErrorMessage.code and .behavior.",
+          "enum": ["bytes", "type", "error"]
+        },
+        "error_code": { "type": "integer" },
+        "error_behavior": { "type": "integer" },
+        "summary": { "type": "string", "description": "A decoding for human readers; not part of the contract." }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "type", "name", "payload_hex", "summary"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "type": { "$ref": "#/$defs/u16hex" },
+        "name": { "type": "string" },
+        "payload_hex": { "$ref": "#/$defs/hex" },
+        "match": { "enum": ["bytes", "type"] },
+        "summary": { "type": "string" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["completed", "failed", "replay_report", "refused"] },
+        "value_hex": { "$ref": "#/$defs/hex" },
+        "failure_code": { "type": "integer" },
+        "code": { "type": "integer" },
+        "action": { "enum": ["retry", "pause", "fail"] },
+        "matched": { "type": "integer" },
+        "mismatch": { "type": "boolean" }
+      }
+    }
+  }
+}

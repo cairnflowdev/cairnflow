@@ -1,0 +1,22 @@
+[package]
+name = "cairn-lifecycle"
+description = "Pure invocation lifecycle core: View, Event, Plan, step, valid and the retry-row codec."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# Deliberately has **no** dependencies: no tokio, no store, no id types. The
+# core decides for **one** invocation per call, so it needs no id; the shell
+# knows the id. That lets `cairn-model` (M4) call this very code without pulling
+# in the engine or SlateDB, and every type here is `Copy + Hash` so it can be
+# stateright state.
+[dependencies]
+
+[features]
+# Flags that plant historical bugs into the core for M4's acceptance matrix
+# (`crates/cairn-model/tests/m4.rs::matrix`). Only `cairn-model` enables it; the
+# product build does not carry it (without it `Bugs` is an empty type and every
+# planted branch is removed at compile time).
+mutations = []

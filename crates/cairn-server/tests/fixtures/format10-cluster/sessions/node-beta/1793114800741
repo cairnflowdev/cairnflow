@@ -1,0 +1,6 @@
+cairnflow-session/1
+node=node-beta
+beat=6
+state=closed
+address=http://127.0.0.1:43747
+ingress=http://127.0.0.1:42533

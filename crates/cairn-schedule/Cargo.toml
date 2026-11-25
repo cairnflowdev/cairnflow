@@ -1,0 +1,23 @@
+[package]
+name = "cairn-schedule"
+description = "Pure schedule arithmetic: 5-field cron in an IANA time zone, every_ms, next(after)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# A pure module: no I/O, no clock reads — `now` is always supplied by the caller.
+#
+# `jiff` is pinned (`=`) and **bundles the tzdb** (`tzdb-bundle-always`): every
+# node uses the same compiled-in tzdb and never reads the machine's
+# `/usr/share/zoneinfo`, so every leader computes the same `next_at` for the same
+# spec (CG-16). Upgrading `jiff` means rerunning the DST tables
+# (`tests::dst_tables`).
+[dependencies]
+jiff = { version = "=0.2.23", default-features = false, features = ["std", "tzdb-bundle-always"] }
+
+[dev-dependencies]
+# Oracle for the UTC zone: 10 000 `(spec, after)` pairs compared with an independent implementation.
+croner = "2"
+chrono = "0.4"

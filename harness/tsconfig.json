@@ -1,0 +1,26 @@
+{
+  // The harness runs under Node's strip-only TypeScript mode, like the SDK, and
+  // imports the SDK by relative source path (`../../sdk/typescript/src/*.ts`), so
+  // the same compiler options apply. Imported SDK and console files are checked
+  // too, as part of this program.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["chaos/**/*.ts", "bench/**/*.ts"]
+}

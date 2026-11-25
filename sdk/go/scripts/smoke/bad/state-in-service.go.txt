@@ -1,0 +1,15 @@
+// Copyright (c) The Cairnflow Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// want: does not implement
+// A plain service has no state: Get takes an ObjectSharedContext.
+package main
+
+import cairn "github.com/cairnflowdev/cairnflow/sdk/go"
+
+func handle(ctx cairn.Context, _ int) (int, error) {
+	v, _, err := cairn.Get[int](ctx, "total")
+	return v, err
+}
+
+func main() { _ = handle }

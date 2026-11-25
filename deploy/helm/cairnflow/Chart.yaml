@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cairnflow
+description: A cairnflow cluster on Kubernetes — stateless nodes, everything on the object store; SST disk cache on a size-capped emptyDir.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

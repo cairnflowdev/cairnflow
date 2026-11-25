@@ -1,0 +1,45 @@
+# cargo-nextest: `scripts/check.sh` runs the Rust rows with `cargo nextest run` when
+# nextest is installed. One process per test, all binaries in parallel — so the
+# `fail` registry (global within a process) is not shared between the tests of
+# `tests/failpoints.rs`, and long binaries no longer queue one after another.
+#
+# Keeps exactly the meaning of the `cargo test --no-fail-fast` that `check.sh` used
+# before: no stop at the first failing test, **no retries** (a flaky test must show,
+# not be hidden by nextest), no per-test time limit (the limit is the step's,
+# `CHECK_STEP_S`). Nextest does not run doctests — `check.sh` runs
+# `cargo test --doc` separately.
+
+[profile.default]
+fail-fast = false
+retries = 0
+# `skip`: prints both the PASS and the SKIP line of every test — `scripts/check-tests.sh`
+# takes the list of tests that actually ran from there.
+status-level = "skip"
+final-status-level = "fail"
+# Only reports "SLOW" after each period, never kills.
+slow-timeout = { period = "120s" }
+
+# Tests that measure load, latency or throughput (auto split decides on the share of
+# turn slots a range uses; `tenant_rate` checks a CU/s rate and the other tenant's p99)
+# need the machine to themselves: next to other tests on a 4-CPU runner the handler
+# throughput drops, no range ever looks hot and the p99 bound breaks. They run alone.
+[[profile.default.overrides]]
+filter = "binary_id(cairn-server::auto_split) | binary_id(cairn-server::tenant_rate)"
+threads-required = "num-test-threads"
+
+# `--profile ci` (the `rust` job of `.github/workflows/ci.yml`): the shared runner is not
+# a machine of known speed, and runners differ by about 1.5× from one run to the next.
+# Tests whose verdict is a measurement of load, latency or time on that machine fail
+# there without a bug, so the profile leaves them out; Ready (`scripts/check.sh`, the
+# default profile) runs them on a known machine. Left out: `auto_split` (a range must
+# look hot), `tenant_rate` (a CU/s rate and a p99 bound), and `query_isolation`'s
+# hostile series (a hostile query that runs past its 5 s budget on a slow runner uses up
+# the tenant's read units, and the next ordinary query is refused).
+[profile.ci]
+default-filter = """
+not (
+  binary_id(cairn-server::auto_split)
+  | binary_id(cairn-server::tenant_rate)
+  | (binary_id(cairn-server::query_isolation) & test(=adversarial_queries_do_not_kill_the_node))
+)
+"""

@@ -1,0 +1,23 @@
+[package]
+name = "cairn-split"
+description = "Pure decision core of range split/merge: Op, Phase, View, Event, Plan, step."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+# Deliberately has **no** dependencies (like `cairn-lifecycle`): no tokio, no
+# store, no `cairn-store` id types. The shell (`cairn-server/src/split/`, the
+# orphan round and D-d of `gc.rs`, `node/spawner.rs`, `ctl.rs`) reads the durable
+# facts, calls `step`, carries out the `Plan`. That lets `cairn-model` (M2) call
+# this very code as its transition function without pulling in SlateDB, and every
+# type here is `Copy + Hash`.
+[dependencies]
+
+[features]
+# Flags that plant historical bugs into the core for M2's acceptance matrix
+# (`crates/cairn-model/tests/m2.rs::matrix`). Only `cairn-model` enables it; the
+# product build sees an empty `Bugs` and every planted branch is removed at
+# compile time.
+mutations = []

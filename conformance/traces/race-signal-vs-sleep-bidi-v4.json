@@ -1,0 +1,56 @@
+{
+  "format": "cairnflow-conformance/1",
+  "name": "race-signal-vs-sleep-bidi-v4",
+  "description": "ctx.race([sleep(60000), signal(\"approve\")]): the Suspension is ONE tree — the sleep's completion (field 1) and the signal name (field 3). The signal arrives before the timer ⇒ the signal wins, the result is its payload.",
+  "source": ["sdk/typescript/test/handler.test.ts"],
+  "spec": ["7", "8.3", "8.7"],
+  "matrix_cells": [],
+  "wire_version": 4,
+  "mode": "BIDI_STREAM",
+  "handler": { "service": "Conformance", "name": "raceSignal" },
+  "clock_ms": 1800000000000,
+  "initial_journal_len": 1,
+  "connections": [
+    {
+      "verify": false,
+      "close": "runtime",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111801", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 1, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e0f4f4c2b13458016205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000060000, result_completion_id: 1, name: \"sleep\" })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0001", "name": "Suspension", "flags": "0x0000", "hex": "000100000000000c0a01011a07617070726f7665", "summary": "Suspension(SuspensionMessage { waiting_completions: [1], waiting_signals: [], waiting_named_signals: [\"approve\"], nested_futures: [], combinator_type: Unknown })" }
+      ]
+    },
+    {
+      "verify": false,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111803", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 3, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e0f4f4c2b13458016205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000060000, result_completion_id: 1, name: \"sleep\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0xfbff", "name": "Signal", "flags": "0x0000", "hex": "fbff0000000000111a07617070726f76652a060a04226f6b22", "summary": "Signal(SignalNotificationMessage { signal_id: Some(Name(\"approve\")), result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001062066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    },
+    {
+      "verify": true,
+      "close": "sdk",
+      "frames": [
+        { "from": "runtime", "channel": "journal", "type": "0x0000", "name": "Start", "flags": "0x0000", "hex": "000000000000001c0a181111111111111111111111111111111111111111111111111804", "summary": "Start(StartMessage { id: b\"\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\\x11\", debug_id: \"\", known_entries: 4, state_map: [], partial_state: false, key: \"\", retry_count_since_last_stored_entry: 0, duration_since_last_stored_entry: 0, random_seed: 0, idempotency_key: None, keepalive_interval_ms: None, replay_only: false })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0400", "name": "Input", "flags": "0x0000", "hex": "040000000000000872060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0x040c", "name": "Sleep", "flags": "0x0000", "hex": "040c00000000001008e0f4f4c2b13458016205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000060000, result_completion_id: 1, name: \"sleep\" })" },
+        { "from": "runtime", "channel": "journal", "type": "0xfbff", "name": "Signal", "flags": "0x0000", "hex": "fbff0000000000111a07617070726f76652a060a04226f6b22", "summary": "Signal(SignalNotificationMessage { signal_id: Some(Name(\"approve\")), result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "runtime", "channel": "journal", "type": "0x0401", "name": "Output", "flags": "0x0000", "hex": "040100000000001062066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+        { "from": "sdk", "channel": "journal", "type": "0x0003", "name": "End", "flags": "0x0000", "hex": "0003000000000000", "summary": "End(EndMessage)" }
+      ]
+    }
+  ],
+  "journal": [
+    { "index": 0, "type": "0x0400", "name": "Input", "payload_hex": "72060a046e756c6c", "summary": "Input(InputCommandMessage { headers: [], value: Some(Value { content: b\"null\", segments: [], len: 0 }), name: \"\" })" },
+    { "index": 1, "type": "0x040c", "name": "Sleep", "payload_hex": "08e0f4f4c2b13458016205736c656570", "summary": "Sleep(SleepCommandMessage { wake_up_time: 1800000060000, result_completion_id: 1, name: \"sleep\" })" },
+    { "index": 2, "type": "0xfbff", "name": "Signal", "payload_hex": "1a07617070726f76652a060a04226f6b22", "summary": "Signal(SignalNotificationMessage { signal_id: Some(Name(\"approve\")), result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" },
+    { "index": 3, "type": "0x0401", "name": "Output", "payload_hex": "62066f757470757472060a04226f6b22", "summary": "Output(OutputCommandMessage { name: \"output\", result: Some(Value(Value { content: b\"\\\"ok\\\"\", segments: [], len: 0 })) })" }
+  ],
+  "outcome": { "kind": "completed", "value_hex": "226f6b22" }
+}

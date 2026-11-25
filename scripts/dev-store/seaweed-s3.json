@@ -1,0 +1,11 @@
+{
+  "identities": [
+    {
+      "name": "cairnflow-dev",
+      "credentials": [
+        { "accessKey": "dev-only-access-key", "secretKey": "dev-only-not-a-secret" }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

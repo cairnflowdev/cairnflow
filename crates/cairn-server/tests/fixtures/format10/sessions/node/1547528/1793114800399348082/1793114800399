@@ -1,0 +1,7 @@
+cairnflow-session/1
+node=node/1547528/1793114800399348082
+beat=5
+state=closed
+address=http://127.0.0.1:35729
+ingress=http://127.0.0.1:45935
+knows=7
